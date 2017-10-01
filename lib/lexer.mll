@@ -63,6 +63,14 @@ rule token = parse
     { LPAREN }
 | ")"
     { RPAREN }
+| ".<"
+    { LCOD }
+| ">."
+    { RCOD }
+| ".~"
+    { ESC }
+| "Runcode.run"
+    { RUN }
 | "->"
     { SINGLE_ARROW }
 | "=>"
@@ -113,6 +121,8 @@ rule token = parse
     { VAL }
 | "type"
     { TYPE }
+| "code"
+    { CODE }
 | digit+
     { INT (int_of_string @@ Lexing.lexeme lexbuf) }
 | var

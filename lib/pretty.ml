@@ -41,10 +41,18 @@ and pp_core_term: core_term -> string = function
     Printf.sprintf "let module %s = %s in %s" (pp_var x0) (pp_core_term e0) (pp_core_term e1)
   | ModE (m0, s0) ->
     Printf.sprintf "(module %s : %s)"  (pp_mod_term m0) (pp_mod_type s0)
+  | CodE e0 ->
+    Printf.sprintf ".<%s>." (pp_core_term e0)
+  | EscE e0 ->
+    Printf.sprintf ".~(%s)" (pp_core_term e0)
+  | RunE e0 ->
+    Printf.sprintf "Runcode.run (%s)" (pp_core_term e0)
 
 and pp_core_type: core_type -> string = function
   | VarT (x0) ->
     pp_var x0
+  | CodT t0 ->
+    Printf.sprintf "%s code" (pp_core_type t0)
   | ModT s0 ->
     Printf.sprintf "(module %s)" (pp_mod_type s0)
   | ArrT (t0, t1) ->

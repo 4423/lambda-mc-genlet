@@ -28,10 +28,14 @@ type var = string
    | LetE of var * core_term * core_term
    | LetModE of var * core_term * core_term
    | ModE of mod_term * mod_type
+   | CodE of core_term
+   | EscE of core_term
+   | RunE of core_term
 
  and core_type =
    | VarT of var
    | ArrT of core_type * core_type
+   | CodT of core_type
    | ModT of mod_type
 
  and mod_term  = StructureM of structure

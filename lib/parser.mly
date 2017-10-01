@@ -66,6 +66,11 @@ open Syntax
 %token END               // "end"
 %token VAL               // "val"
 %token TYPE              // "type"
+%token CODE              // "code"
+%token LCOD              // ".<"
+%token RCOD              // ">."
+%token ESC               // ".~"
+%token RUN               // "Runcode.run"
 %token EOF
 %nonassoc BAR
 %nonassoc IN ELSE
@@ -97,6 +102,8 @@ core_type
     { ModT $3 }
   | core_type SINGLE_ARROW core_type
     { ArrT ($1, $3) }
+  | core_type CODE
+    { CodT $1 }
   | VAR
     { VarT $1 }
   ;
@@ -114,6 +121,10 @@ core_term
     { LetE ($2, $4, $6) }
   | LET MODULE CON EQ core_term IN core_term
     { LetModE ($3, $5, $7) }
+  | ESC core_term %prec UNARY
+    { EscE $2 }
+  | RUN core_term %prec UNARY
+    { RunE $2 }
   ;
 
 simple_term
@@ -121,6 +132,8 @@ simple_term
     { $2 }
   | LPAREN MODULE mod_term COL mod_type RPAREN
     { ModE ($3, $5) }
+  | LCOD core_term RCOD
+    { CodE $2 }
   | VAR
     { VarE $1 }
   ;
