@@ -19,20 +19,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *)
-type var = string
+open OUnit
+open Syntax
+open Parser
 
-type core_term = ..
-type core_type = ..
-
-type mod_term = ..
-type mod_type = ..
-
-type core_term +=
-  | VarE of var
-  | FunE of var * core_type * core_term
-  | AppE of core_term * core_term
-  | LetE of var * core_term * core_term
-
-type core_type +=
-  | VarT of var
-  | ArrT of core_type * core_type
+let _ =
+  run_test_tt_main @@ begin
+    "Pretty.main" >::: [
+      "Syntax.VarE" >:: begin fun () ->
+        let x0 = "x0" in
+        let e0 = VarE x0 in
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0)
+      end;
+      "Syntax.FunE" >:: begin fun () ->
+        let x0 = "(fun (x0:t0) -> x0)" in
+        let e0 = FunE ("x0", VarT "t0", VarE "x0") in
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0)
+      end;
+      "Syntax.AppE" >:: begin fun () ->
+        let x0 = "(x0 x1)" in
+        let e0 = AppE (VarE "x0", VarE "x1") in
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0)
+      end;
+      "Syntax.LetE" >:: begin fun () ->
+        let x0 = "let x0 = x1 in x0" in
+        let e0 = LetE ("x0", VarE "x1", VarE "x0") in
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0)
+      end;
+    ]
+  end
