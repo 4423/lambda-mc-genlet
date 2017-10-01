@@ -46,5 +46,25 @@ let _ =
         let e0 = LetE ("x0", VarE "x1", VarE "x0") in
         assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0)
       end;
+      "Syntax.CodE" >:: begin fun () ->
+        let x0 = ".<x0>." in
+        let x1 = "(fun (x0:t0) -> .<x0>.)" in
+        let e0 = CodE (VarE "x0") in
+        let e1 = FunE ("x0", VarT "t0", CodE (VarE "x0")) in
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0);
+        assert_equal e1 @@ Parser.main Lexer.token (Lexing.from_string x1)
+      end;
+      "Syntax.EscE" >:: begin fun () ->
+        let x0 = ".~x0" in
+        let x1 = ".~(x0)" in
+        let e0 = EscE (VarE "x0") in
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0);
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x1)
+      end;
+      "Syntax.RunE" >:: begin fun () ->
+        let x0 = "Runcode.run x0" in
+        let e0 = RunE (VarE "x0") in
+        assert_equal e0 @@ Parser.main Lexer.token (Lexing.from_string x0)
+      end;
     ]
   end

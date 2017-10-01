@@ -45,6 +45,24 @@ let _ =
         let e0 = LetE ("x0", VarE "x1", VarE "x2") in
         assert_equal x0 @@ Pretty.pp_core_term e0
       end;
+      "Syntax.CodE" >:: begin fun () ->
+        let x0 = ".<x0>." in
+        let x1 = "let x0 = .<x1>. in x2" in
+        let e0 = CodE (VarE "x0") in
+        let e1 = LetE ("x0", CodE (VarE "x1"), VarE "x2") in
+        assert_equal x0 @@ Pretty.pp_core_term e0;
+        assert_equal x1 @@ Pretty.pp_core_term e1
+      end;
+      "Syntax.EscE" >:: begin fun () ->
+        let x0 = ".~(x0)" in
+        let e0 = EscE (VarE "x0") in
+        assert_equal x0 @@ Pretty.pp_core_term e0;
+      end;
+      "Syntax.RunE" >:: begin fun () ->
+        let x0 = "Runcode.run (x0)" in
+        let e0 = RunE (VarE "x0") in
+        assert_equal x0 @@ Pretty.pp_core_term e0;
+      end;
     ];
   end
 
