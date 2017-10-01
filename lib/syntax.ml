@@ -22,10 +22,29 @@
 type var = string
  and core_term =
    | VarE of var
+   | AccE of path * var
    | FunE of var * core_type * core_term
    | AppE of core_term * core_term
    | LetE of var * core_term * core_term
-         
+   | LetModE of var * core_term * core_term
+   | ModE of mod_term * mod_type
+
  and core_type =
    | VarT of var
    | ArrT of core_type * core_type
+   | ModT of mod_type
+
+ and mod_term  = StructureM of structure
+ and structure = structure_component list
+ and structure_component =
+   | TypeDeclM of var * core_type
+   | ValDeclM  of var * core_type * core_term
+
+ and mod_type  = SignatureS of signature
+ and signature = signature_component list
+ and signature_component =
+   | TypeDeclS of var * core_type
+   | ValDeclS  of var * core_type
+
+ and path =
+   | VarP of string

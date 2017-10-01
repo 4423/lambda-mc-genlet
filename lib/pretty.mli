@@ -23,3 +23,6 @@ open Syntax
 
 val pp_core_term: core_term -> string
 val pp_core_type: core_type -> string
+val pp_mod_term: mod_term -> string
+val pp_mod_type: mod_type -> string
+

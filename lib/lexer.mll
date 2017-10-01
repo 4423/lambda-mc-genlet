@@ -28,7 +28,8 @@ let digit      = ['0'-'9']
 let lower      = ['a'-'z']
 let upper      = ['A'-'Z']
 let alpha      = (lower | upper)
-let ident      = (lower | "_") (alpha | "_" | digit)*
+let var        = (lower | "_") (alpha | "_" | digit)*
+let con        = (upper) (alpha | "_" | digit)*
 
 rule token = parse
 | whitespace+
@@ -100,10 +101,24 @@ rule token = parse
     { THEN }
 | "else"
     { ELSE }
+| "module"
+    { MODULE }
+| "struct"
+    { STRUCTURE }
+| "sig"
+    { SIGNATURE }
+| "end"
+    { END }
+| "val"
+    { VAL }
+| "type"
+    { TYPE }
 | digit+
     { INT (int_of_string @@ Lexing.lexeme lexbuf) }
-| ident
+| var
     { VAR (Lexing.lexeme lexbuf) }
+| con
+    { CON (Lexing.lexeme lexbuf) }
 | _
     { failwith (Printf.sprintf "unknown token %s" (Lexing.lexeme lexbuf)) }
 

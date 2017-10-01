@@ -46,10 +46,10 @@ let _ =
     | [] -> print_string @@ usage ()
     | _  ->
       List.iter begin fun path ->
-        print_endline @@ Pretty.pp_core_term @@ Trans.f @@ parse_file path
+        print_endline @@ Pretty.pp_core_term @@ parse_file path
       end !filepaths
   with
   | Quit n -> exit n
-;;     
+;;
 
 
