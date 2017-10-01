@@ -19,21 +19,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *)
-type var = string
+open Syntax
 
-type core_term = ..
-type core_type = ..
+external identity: 'a -> 'a = "%identity"
 
-type mod_term = ..
-type mod_type = ..
+let rec pp_var: var -> string =
+  identity
 
-type core_term +=
-  | VarE of var
-  | FunE of var * core_type * core_term
-  | AppE of core_term * core_term
-  | LetE of var * core_term * core_term
+and pp_core_term: core_term -> string = function
+  | VarE (x0) ->
+    pp_var x0
+  | FunE (x0, t0, e0) ->
+    Printf.sprintf "(fun (%s: %s) -> %s)" (pp_var x0) (pp_core_type t0) (pp_core_term e0)
+  | AppE (e0, e1) ->
+    Printf.sprintf "(%s %s)" (pp_core_term e0) (pp_core_term e1)
+  | LetE (x0, e0, e1) ->
+    Printf.sprintf "let %s = %s in %s" (pp_var x0) (pp_core_term e0) (pp_core_term e1)
+  | _ ->
+    failwith "unknown syntax"
 
-type core_type +=
-  | VarT of var
-  | ArrT of core_type * core_type
-
+and pp_core_type: core_type -> string = function
+  | VarT (x0) ->
+    pp_var x0
+  | ArrT (t0, t1) ->
+    Printf.sprintf "(%s -> %s)" (pp_core_type t0) (pp_core_type t1)
+  | _ ->
+    failwith "unknown syntax"
