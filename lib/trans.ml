@@ -19,13 +19,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *)
-type var = string
- and core_term =
-   | VarE of var
-   | FunE of var * core_type * core_term
-   | AppE of core_term * core_term
-   | LetE of var * core_term * core_term
-         
- and core_type =
-   | VarT of var
-   | ArrT of core_type * core_type
+open Syntax
+
+let rec f: core_term -> core_term =
+  fun e0 -> core_term0 e0
+
+and core_term0: core_term -> core_term = function
+  | VarE x0 ->
+    VarE x0
+  | AppE (e0, e1) ->
+    AppE (core_term0 e0, core_term0 e1)
+  | FunE (x0, t0, e0) ->
+    FunE (x0, core_type0 t0, core_term0 e0)
+  | LetE (x0, e0, e1) ->
+    LetE (x0, core_term0 e0, core_term0 e1)
+and core_term1: core_term -> core_term = function
+  | VarE x0 ->
+    VarE x0
+  | AppE (e0, e1) ->
+    AppE (core_term1 e0, core_term1 e1)
+  | FunE (x0, t0, e0) ->
+    FunE (x0, core_type1 t0, core_term1 e0)
+  | LetE (x0, e0, e1) ->
+    LetE (x0, core_term1 e0, core_term1 e1)
+
+and core_type0: core_type -> core_type = function
+  | VarT x0 ->
+    VarT x0
+  | ArrT (t0, t1) ->
+    ArrT (core_type0 t0, core_type0 t1)
+and core_type1: core_type -> core_type = function
+  | VarT x0 ->
+    VarT x0
+  | ArrT (t0, t1) ->
+    ArrT (core_type1 t0, core_type1 t1)

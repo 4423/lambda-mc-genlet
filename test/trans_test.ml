@@ -19,13 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *)
-type var = string
- and core_term =
-   | VarE of var
-   | FunE of var * core_type * core_term
-   | AppE of core_term * core_term
-   | LetE of var * core_term * core_term
-         
- and core_type =
-   | VarT of var
-   | ArrT of core_type * core_type
+open OUnit
+open Syntax
+
+let _ =
+  run_test_tt_main @@ begin
+    "Trans.f" >::: [
+      "Syntax.VarE" >:: begin fun () ->
+        let e0 = VarE "x0" in
+        assert_equal e0 @@ Trans.f e0
+      end;
+      "Syntax.FunE" >:: begin fun () ->
+        let e0 = FunE ("x0", VarT "t0", VarE "x0") in
+        assert_equal e0 @@ Trans.f e0
+      end;
+      "Syntax.AppE" >:: begin fun () ->
+        let e0 = AppE (VarE "x0", VarE "x1") in
+        assert_equal e0 @@ Trans.f e0
+      end;
+      "Syntax.LetE" >:: begin fun () ->
+        let e0 = LetE ("x0", VarE "x1", VarE "x0") in
+        assert_equal e0 @@ Trans.f e0
+      end
+    ]
+  end

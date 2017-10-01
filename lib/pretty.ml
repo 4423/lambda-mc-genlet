@@ -35,13 +35,9 @@ and pp_core_term: core_term -> string = function
     Printf.sprintf "(%s %s)" (pp_core_term e0) (pp_core_term e1)
   | LetE (x0, e0, e1) ->
     Printf.sprintf "let %s = %s in %s" (pp_var x0) (pp_core_term e0) (pp_core_term e1)
-  | _ ->
-    failwith "unknown syntax"
 
 and pp_core_type: core_type -> string = function
   | VarT (x0) ->
     pp_var x0
   | ArrT (t0, t1) ->
     Printf.sprintf "(%s -> %s)" (pp_core_type t0) (pp_core_type t1)
-  | _ ->
-    failwith "unknown syntax"

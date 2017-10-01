@@ -19,13 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *)
-type var = string
- and core_term =
-   | VarE of var
-   | FunE of var * core_type * core_term
-   | AppE of core_term * core_term
-   | LetE of var * core_term * core_term
-         
- and core_type =
-   | VarT of var
-   | ArrT of core_type * core_type
+open Syntax
+
+val f: core_term -> core_term
+
+
