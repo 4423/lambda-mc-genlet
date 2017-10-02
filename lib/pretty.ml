@@ -51,33 +51,37 @@ and pp_core_term: core_term -> string = function
 and pp_core_type: core_type -> string = function
   | VarT (x0) ->
     pp_var x0
+  | AccT (p0, x0) ->
+    Printf.sprintf "%s.%s" (pp_path p0) (pp_var x0)
   | CodT t0 ->
     Printf.sprintf "%s code" (pp_core_type t0)
+  | EscT t0 ->
+    Printf.sprintf "(%%%s)" (pp_core_type t0)
   | ModT s0 ->
     Printf.sprintf "(module %s)" (pp_mod_type s0)
   | ArrT (t0, t1) ->
     Printf.sprintf "(%s -> %s)" (pp_core_type t0) (pp_core_type t1)
 
 and pp_mod_term: mod_term -> string = function
-  | StructureM (cs0) ->
+  | Structure (cs0) ->
     Printf.sprintf "struct %s end" (pp_structure cs0)
 and pp_structure: structure -> string =
   fun cs0 -> String.concat "; " @@ List.map pp_structure_component cs0
 and pp_structure_component: structure_component -> string = function
-  | TypeDeclM (x0, t0) ->
+  | TypeDef (x0, t0) ->
     Printf.sprintf "type %s = %s" (pp_var x0) (pp_core_type t0)
-  | ValDeclM (x0, t0, e0) ->
+  | ValueDef (x0, t0, e0) ->
     Printf.sprintf "let %s : %s = %s" (pp_var x0) (pp_core_type t0) (pp_core_term e0)
 
 and pp_mod_type: mod_type -> string = function
-  | SignatureS (cs0) ->
+  | Signature (cs0) ->
     Printf.sprintf "sig %s end" (pp_signature cs0)
 and pp_signature: signature -> string =
   fun cs0 -> String.concat "; " @@ List.map pp_signature_component cs0
 and pp_signature_component: signature_component -> string = function
-  | TypeDeclS (x0, t0) ->
+  | TypeDec (x0, t0) ->
     Printf.sprintf "type %s = %s" (pp_var x0) (pp_core_type t0)
-  | ValDeclS (x0, t0) ->
+  | ValueDec (x0, t0) ->
     Printf.sprintf "val %s : %s" (pp_var x0) (pp_core_type t0)
 
 and pp_path: path -> string = function

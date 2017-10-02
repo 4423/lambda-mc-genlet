@@ -19,37 +19,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *)
-exception Quit of int
+type var = string
+type core_term = ..
+type core_type = ..
 
-let parse lexbuf =
-  Parser.main Lexer.token lexbuf
+type core_term +=
+  | VarE of var
+  | LetE of var * core_term * core_term
+  | FunE of var * core_type * core_term
+  | AppE of core_term * core_term
+  | BraE of core_term
+  | EscE of core_term
+  | RunE of core_term
 
-let parse_file filepath =
-  let ichannel = open_in filepath in
-  try parse (Lexing.from_channel ichannel) with
-  | e -> close_in ichannel; raise e
-
-let usage () =
-  Printf.sprintf "usage: %s [<option>] <file0> <file1> ...\n" (Sys.argv.(0))
-
-let _ =
-  let open Sys in
-  set_signal sigint (Signal_handle (fun n -> raise (Quit n)));
-  set_signal sigusr1 (Signal_handle (fun n -> raise (Quit n)));
-  let filepaths = ref [] in
-  Arg.parse
-    []
-    (fun path -> filepaths := !filepaths @ path :: [])
-    (usage ());
-  try
-    match !filepaths with
-    | [] -> print_string @@ usage ()
-    | _  ->
-      List.iter begin fun path ->
-        print_endline @@ Pretty.pp_core_term @@ Norm.g @@ Norm.f @@ parse_file path
-      end !filepaths
-  with
-  | Quit n -> exit n
-;;
-
-
+type core_type +=
+  | VarT of var
+  | ArrT of core_type * core_type
+  | CodT of core_type

@@ -140,7 +140,7 @@ simple_term
 
 mod_term
   : STRUCTURE structure END
-    { StructureM (List.rev $2) }
+    { Structure (List.rev $2) }
   ;
 
 structure
@@ -152,14 +152,14 @@ structure
 
 structure_component
   : TYPE VAR EQ core_type
-    { TypeDeclM ($2, $4) }
+    { TypeDef ($2, $4) }
   | LET VAR COL core_type EQ core_term
-    { ValDeclM ($2, $4, $6) }
+    { ValueDef ($2, $4, $6) }
   ;
 
 mod_type
   : SIGNATURE signature END
-    { SignatureS (List.rev $2) }
+    { Signature (List.rev $2) }
   ;
 
 signature
@@ -171,9 +171,9 @@ signature
 
 signature_component
   : TYPE VAR EQ core_type
-    { TypeDeclS ($2, $4) }
+    { TypeDec ($2, $4) }
   | VAL VAR COL core_type
-    { ValDeclS ($2, $4) }
+    { ValueDec ($2, $4) }
   ;
 
 path
