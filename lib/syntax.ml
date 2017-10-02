@@ -21,16 +21,16 @@
  *)
 type var = string
  and core_term =
-   | VarE of var
-   | AccE of path * var
-   | FunE of var * core_type * core_term
-   | AppE of core_term * core_term
-   | LetE of var * core_term * core_term
+   | VarE    of var
+   | AccE    of path * var
+   | FunE    of var * core_term
+   | AppE    of core_term * core_term
+   | LetE    of var * core_term * core_term
    | LetModE of var * core_term * core_term
-   | ModE of mod_term * mod_type
-   | CodE of core_term
-   | EscE of core_term
-   | RunE of core_term
+   | ModE    of mod_term * mod_type
+   | CodE    of core_term
+   | EscE    of core_term
+   | RunE    of core_term
 
  and core_type =
    | VarT of var
@@ -40,13 +40,17 @@ type var = string
    | EscT of core_type
    | ModT of mod_type
 
- and mod_term  = Structure of structure
+ and mod_decl =
+   | StructureDec of var * mod_term
+   | SignatureDec of var * mod_type
+
+ and mod_term  = Structure of structure | VarM of string
  and structure = structure_component list
  and structure_component =
    | TypeDef  of var * core_type
    | ValueDef of var * core_type * core_term
 
- and mod_type  = Signature of signature
+ and mod_type  = Signature of signature | VarS of string
  and signature = signature_component list
  and signature_component =
    | TypeDec  of var * core_type

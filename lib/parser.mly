@@ -82,7 +82,7 @@ open Syntax
 %nonassoc UNARY
 %left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN
 
-%type <Syntax.core_term> main
+%type <Syntax.mod_decl list * Syntax.core_term> main
 %type <Syntax.core_term> core_term
 %type <Syntax.core_type> core_type
 %type <Syntax.mod_term> mod_term
@@ -91,8 +91,8 @@ open Syntax
 %%
 
 main
-  : core_term EOF
-    { $1 }
+  : mod_decl_list core_term EOF
+    { List.rev $1, $2 }
   ;  
 
 core_type
@@ -115,8 +115,8 @@ core_term
     { AppE ($1, $2) }
   | path DOT VAR
     { AccE ($1, $3) }
-  | FUN LPAREN VAR COL core_type RPAREN SINGLE_ARROW core_term
-    { FunE ($3, $5, $8) }  
+  | FUN VAR SINGLE_ARROW core_term
+    { FunE ($2, $4) }  
   | LET VAR EQ core_term IN core_term
     { LetE ($2, $4, $6) }
   | LET MODULE CON EQ core_term IN core_term
@@ -138,9 +138,24 @@ simple_term
     { VarE $1 }
   ;
 
+mod_decl_list
+  : mod_decl_list mod_decl
+    { $2 :: $1 }
+  |
+    { [] }
+
+mod_decl
+  : MODULE CON EQ mod_term
+    { StructureDec ($2, $4) }
+  | MODULE TYPE CON EQ mod_type
+    { SignatureDec ($3, $5) }
+  ;
+
 mod_term
   : STRUCTURE structure END
     { Structure (List.rev $2) }
+  | CON
+    { VarM $1 }
   ;
 
 structure
@@ -160,6 +175,8 @@ structure_component
 mod_type
   : SIGNATURE signature END
     { Signature (List.rev $2) }
+  | CON
+    { VarS $1 } 
   ;
 
 signature

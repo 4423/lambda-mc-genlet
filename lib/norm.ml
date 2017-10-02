@@ -25,7 +25,7 @@ module Small = struct
     | VarE    of var
     | AccE    of path * var
     | LetE    of var * core_term * core_term
-    | FunE    of var * core_type * core_term
+    | FunE    of var * core_term
     | AppE    of core_term * core_term
     | CodE    of core_term
     | EscE    of core_term
@@ -36,13 +36,18 @@ module Small = struct
     | ArrT    of core_type * core_type
     | CodT    of core_type
     | EscT    of core_type
-  and mod_term  = Structure of structure
+
+  and mod_decl =
+    | StructureDec of var * mod_term
+    | SignatureDec of var * mod_type
+
+  and mod_term  = Structure of structure | VarM of var
   and structure = structure_component list
   and structure_component =
     | TypeDef  of var * core_type
     | ValueDef of var * core_type * core_term
           
-  and mod_type  = Signature of signature
+  and mod_type  = Signature of signature | VarS of var
   and signature = signature_component list
   and signature_component =
     | TypeDec  of var * core_type
@@ -57,7 +62,7 @@ module Large = struct
     | SmallE  of Small.core_term
     | LetE    of Small.var * core_term * core_term
     | LetModE of Small.var * core_term * core_term
-    | FunE    of Small.var * core_type * core_term
+    | FunE    of Small.var * core_term
     | AppE    of core_term * core_term
     | CodE    of core_term
     | ModE    of Small.mod_term * Small.mod_type
@@ -71,19 +76,25 @@ end
 module S = Small
 module L = Large
 
-let rec f: Syntax.core_term -> Large.core_term =
-  fun e -> norm_term e
+let rec f: (Syntax.mod_decl list * Syntax.core_term) -> (Small.mod_decl list * Large.core_term) =
+  fun (decl_list, e) -> 
+    let decl_list' = List.map begin function
+      | Syntax.StructureDec (x0, m0) -> S.StructureDec (x0, norm_structure m0)
+      | Syntax.SignatureDec (x0, s0) -> S.SignatureDec (x0, norm_signature s0)
+    end decl_list in
+    decl_list', norm_term e
+
 and norm_term = function
   | Syntax.VarE x0 ->
     L.SmallE (S.VarE x0)
   | Syntax.AccE (Syntax.VarP x0, x1) ->
     L.SmallE (S.AccE (S.VarP x0, x1))
-  | Syntax.FunE (x0, t0, e0) -> begin
-      match norm_type t0, norm_term e0 with
-      | L.SmallT t0', L.SmallE e0' ->
-        L.SmallE (S.FunE (x0, t0', e0'))
-      | t0, e0 ->
-        L.FunE (x0, t0, e0)
+  | Syntax.FunE (x0, e0) -> begin
+      match norm_term e0 with
+      | L.SmallE e0' ->
+        L.SmallE (S.FunE (x0, e0'))
+      | e0 ->
+        L.FunE (x0, e0)
     end
   | Syntax.AppE (e0, e1) -> begin
       match norm_term e0, norm_term e1 with
@@ -128,11 +139,18 @@ and norm_type = function
     L.SmallT (S.VarT x0)
   | Syntax.AccT (Syntax.VarP x0, x1) ->
     L.SmallT (S.AccT (S.VarP x0, x1))
-  | Syntax.ArrT (t0, t1) ->
-    L.ArrT (norm_type t0, norm_type t1)
+  | Syntax.ArrT (t0, t1) -> begin
+      match norm_type t0, norm_type t1 with
+      | L.SmallT t0', L.SmallT t1' ->
+        L.SmallT (S.ArrT (t0', t1'))
+      | t0, t1 ->
+        L.ArrT (t0, t1)
+    end
   | Syntax.CodT t0 -> begin
       match norm_type t0 with
       | L.SmallT t0' -> L.SmallT (S.CodT t0')
+      | L.ModT s0 ->
+        L.ModCodT s0
       | _ ->
         failwith "[error] ``code`` is not allowed to apply to large type"
     end
@@ -146,7 +164,10 @@ and norm_type = function
     L.ModT (norm_signature s0)
 
 and norm_structure = function
-  | Syntax.Structure cs0 -> S.Structure (List.map norm_structure_component cs0)
+  | Syntax.Structure cs0 ->
+    S.Structure (List.map norm_structure_component cs0)
+  | Syntax.VarM x0 ->
+    S.VarM x0
 and norm_structure_component = function
   | Syntax.TypeDef (x0, t0) -> begin
       match norm_type t0 with
@@ -162,7 +183,10 @@ and norm_structure_component = function
     end
 
 and norm_signature = function
-  | Syntax.Signature cs0 -> S.Signature (List.map norm_signature_component cs0)
+  | Syntax.Signature cs0 ->
+    S.Signature (List.map norm_signature_component cs0)
+  | Syntax.VarS x0 ->
+    S.VarS x0
 and norm_signature_component = function
   | Syntax.TypeDec (x0, t0) -> begin
       match norm_type t0 with
@@ -177,8 +201,14 @@ and norm_signature_component = function
         failwith "[error] large-type can not appear within a module signature"
     end
 
-let rec g: Large.core_term -> Syntax.core_term =
-  fun e -> denorm_term e
+let rec g: (Small.mod_decl list * Large.core_term) -> (Syntax.mod_decl list * Syntax.core_term) =
+  fun (decl_list, e) -> 
+    let decl_list' = List.map begin function
+      | S.StructureDec (x0, m0) -> Syntax.StructureDec (x0, denorm_structure m0)
+      | S.SignatureDec (x0, s0) -> Syntax.SignatureDec (x0, denorm_signature s0)
+    end decl_list in
+    decl_list', denorm_term e
+
 and denorm_term = function
   | L.SmallE (S.VarE x0) ->
     Syntax.VarE x0
@@ -186,8 +216,8 @@ and denorm_term = function
     Syntax.AccE (Syntax.VarP x0, x1)
   | L.SmallE (S.LetE (x0, e0, e1)) ->
     Syntax.LetE (x0, denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
-  | L.SmallE (S.FunE (x0, t0, e0)) ->
-    Syntax.FunE (x0, denorm_type (L.SmallT t0), denorm_term (L.SmallE e0))
+  | L.SmallE (S.FunE (x0, e0)) ->
+    Syntax.FunE (x0, denorm_term (L.SmallE e0))
   | L.SmallE (S.AppE (e0, e1)) ->
     Syntax.AppE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
   | L.SmallE (S.CodE e0) ->
@@ -200,8 +230,8 @@ and denorm_term = function
     Syntax.LetE (x0, denorm_term e0, denorm_term e1)
   | L.LetModE (x0, e0, e1) ->
     Syntax.LetModE (x0, denorm_term e0, denorm_term e1)
-  | L.FunE (x0, t0, e0) ->
-    Syntax.FunE (x0, denorm_type t0, denorm_term e0)
+  | L.FunE (x0, e0) ->
+    Syntax.FunE (x0, denorm_term e0)
   | L.AppE (e0, e1) ->
     Syntax.AppE (denorm_term e0, denorm_term e1)
   | L.CodE e0 ->
@@ -227,7 +257,10 @@ and denorm_type = function
     Syntax.CodT (Syntax.ModT (denorm_signature s0))
 
 and denorm_structure = function
-  | S.Structure cs0 -> Syntax.Structure (List.map denorm_structure_component cs0)
+  | S.Structure cs0 ->
+    Syntax.Structure (List.map denorm_structure_component cs0)
+  | S.VarM x0 ->
+    Syntax.VarM x0
 and denorm_structure_component = function
   | S.TypeDef (x0, t0) ->
     Syntax.TypeDef (x0, denorm_type (L.SmallT t0))
@@ -235,7 +268,10 @@ and denorm_structure_component = function
     Syntax.ValueDef (x0, denorm_type (L.SmallT t0), denorm_term (L.SmallE e0))
 
 and denorm_signature = function
-  | S.Signature cs0 -> Syntax.Signature (List.map denorm_signature_component cs0)
+  | S.Signature cs0 ->
+    Syntax.Signature (List.map denorm_signature_component cs0)
+  | S.VarS x0 ->
+    Syntax.VarS x0
 and denorm_signature_component = function
   | S.TypeDec (x0, t0) ->
     Syntax.TypeDec (x0, denorm_type (L.SmallT t0))

@@ -23,16 +23,19 @@ open Syntax
 
 external identity: 'a -> 'a = "%identity"
 
-let rec pp_var: var -> string =
-  identity
+let rec f: (Syntax.mod_decl list * Syntax.core_term) -> string =
+  fun (decl_list, e) ->
+    pp_mod_decl_list decl_list ^ "\n" ^ pp_core_term e
 
+and pp_var: var -> string =
+  identity
 and pp_core_term: core_term -> string = function
   | VarE (x0) ->
     pp_var x0
   | AccE (p0, x0) ->
     Printf.sprintf "%s.%s" (pp_path p0) (pp_var x0)
-  | FunE (x0, t0, e0) ->
-    Printf.sprintf "(fun (%s: %s) -> %s)" (pp_var x0) (pp_core_type t0) (pp_core_term e0)
+  | FunE (x0, e0) ->
+    Printf.sprintf "(fun %s -> %s)" (pp_var x0) (pp_core_term e0)
   | AppE (e0, e1) ->
     Printf.sprintf "(%s %s)" (pp_core_term e0) (pp_core_term e1)
   | LetE (x0, e0, e1) ->
@@ -62,11 +65,25 @@ and pp_core_type: core_type -> string = function
   | ArrT (t0, t1) ->
     Printf.sprintf "(%s -> %s)" (pp_core_type t0) (pp_core_type t1)
 
+and pp_mod_decl_list: mod_decl list -> string =
+  fun decl_list -> String.concat " " @@ List.map pp_mod_decl decl_list
+
+and pp_mod_decl: mod_decl -> string = function
+  | StructureDec (x0, m0) ->
+    Printf.sprintf "module %s = %s"
+      (pp_var x0)
+      (pp_mod_term m0)
+  | SignatureDec (x0, s0) ->
+    Printf.sprintf "module type %s = %s"
+      (pp_var x0)
+      (pp_mod_type s0)
+
 and pp_mod_term: mod_term -> string = function
   | Structure (cs0) ->
     Printf.sprintf "struct %s end" (pp_structure cs0)
+  | VarM x0 -> x0
 and pp_structure: structure -> string =
-  fun cs0 -> String.concat "; " @@ List.map pp_structure_component cs0
+  fun cs0 -> String.concat " " @@ List.map pp_structure_component cs0
 and pp_structure_component: structure_component -> string = function
   | TypeDef (x0, t0) ->
     Printf.sprintf "type %s = %s" (pp_var x0) (pp_core_type t0)
@@ -76,8 +93,10 @@ and pp_structure_component: structure_component -> string = function
 and pp_mod_type: mod_type -> string = function
   | Signature (cs0) ->
     Printf.sprintf "sig %s end" (pp_signature cs0)
+  | VarS x0 -> x0
+
 and pp_signature: signature -> string =
-  fun cs0 -> String.concat "; " @@ List.map pp_signature_component cs0
+  fun cs0 -> String.concat " " @@ List.map pp_signature_component cs0
 and pp_signature_component: signature_component -> string = function
   | TypeDec (x0, t0) ->
     Printf.sprintf "type %s = %s" (pp_var x0) (pp_core_type t0)
