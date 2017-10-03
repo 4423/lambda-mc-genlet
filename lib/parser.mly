@@ -121,6 +121,8 @@ core_type
     { ArrT ($1, $3) }
   | core_type CODE
     { CodT $1 }
+  | path DOT VAR
+    { AccT ($1, $3) }
   | VAR
     { VarT $1 }
   ;
@@ -132,6 +134,8 @@ core_term
     { AppE ($1, $2) }
   | path DOT VAR
     { AccE ($1, $3) }
+  | FUN LPAREN MODULE CON COL mod_type RPAREN SINGLE_ARROW core_term
+    { FunModE ($4, $6, $9) }
   | FUN VAR SINGLE_ARROW core_term
     { FunE ($2, $4) }  
   | LET VAR type_parameter_list parameter_list EQ core_term IN core_term
@@ -213,7 +217,9 @@ signature
 
 signature_component
   : TYPE VAR EQ core_type
-    { TypeS ($2, $4) }
+    { TypeS ($2, Some $4) }
+  | TYPE VAR
+    { TypeS ($2, None) }
   | VAL VAR COL core_type
     { ValS ($2, $4) }
   ;

@@ -27,6 +27,7 @@ type var = string
    | VarE    of var
    | AccE    of path * var
    | FunE    of var * core_term
+   | FunModE of var * mod_type * core_term
    | AppE    of core_term * core_term
    | LetE    of var * var list * var list * core_term * core_term
    | LetRecE of var * var list * var list * core_term * core_term
@@ -59,8 +60,8 @@ type var = string
  and mod_type  = Signature of signature | VarS of var | Sharing of mod_type * var * core_type
  and signature = signature_component list
  and signature_component =
-   | TypeS  of var * core_type
-   | ValS of var * core_type
+   | TypeS  of var * core_type option
+   | ValS   of var * core_type
 
  and path =
    | VarP of string

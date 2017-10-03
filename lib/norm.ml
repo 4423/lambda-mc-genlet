@@ -53,7 +53,7 @@ module Small = struct
   and mod_type  = Signature of signature | Sharing of mod_type * var * core_type
   and signature = signature_component list
   and signature_component =
-    | TypeS of var * core_type
+    | TypeS of var * core_type option
     | ValS  of var * core_type
           
   and path =
@@ -70,6 +70,7 @@ module Large = struct
     | LetRecE of Small.var * Small.var list * Small.var list * core_term * core_term
     | LetModE of Small.var * core_term * core_term
     | FunE    of Small.var * core_term
+    | FunModE of Small.var * Small.mod_type * core_term
     | AppE    of core_term * core_term
     | IfE     of core_term * core_term * core_term
     | CodE    of core_term
@@ -124,6 +125,8 @@ and norm_term env = function
       | e0 ->
         L.FunE (x0, e0)
     end
+  | Syntax.FunModE (x0, s0, e0) ->
+    L.FunModE (x0, norm_signature env s0, norm_term env e0)
   | Syntax.AppE (e0, e1) -> begin
       match norm_term env e0, norm_term env e1 with
       | L.SmallE e0', L.SmallE e1' ->
@@ -251,12 +254,14 @@ and norm_signature env = function
         failwith (Printf.sprintf "unbound module signature '%s'" x0)
     end
 and norm_signature_component env = function
-  | Syntax.TypeS (x0, t0) -> begin
+  | Syntax.TypeS (x0, Some t0) -> begin
       match norm_type env t0 with
-      | L.SmallT t0' -> S.TypeS (x0, t0')
+      | L.SmallT t0' -> S.TypeS (x0, Some t0')
       | _ ->
         failwith "[error] large-type can not appear within a module signature"
     end
+  | Syntax.TypeS (x0, None) ->
+    S.TypeS (x0, None)
   | Syntax.ValS (x0, t0) -> begin
       match norm_type env t0 with
       | L.SmallT t0' -> S.ValS (x0, t0')
@@ -309,6 +314,8 @@ and denorm_term = function
     Syntax.LetRecE (x0, xs0, ys0, denorm_term e0, denorm_term e1)
   | L.LetModE (x0, e0, e1) ->
     Syntax.LetModE (x0, denorm_term e0, denorm_term e1)
+  | L.FunModE (x0, s0, e0) ->
+    Syntax.FunModE (x0, denorm_signature s0, denorm_term e0)
   | L.FunE (x0, e0) ->
     Syntax.FunE (x0, denorm_term e0)
   | L.AppE (e0, e1) ->
@@ -358,7 +365,9 @@ and denorm_signature = function
     Syntax.Sharing (denorm_signature s0, x0, denorm_type (L.SmallT t0))
 
 and denorm_signature_component = function
-  | S.TypeS (x0, t0) ->
-    Syntax.TypeS (x0, denorm_type (L.SmallT t0))
+  | S.TypeS (x0, Some t0) ->
+    Syntax.TypeS (x0, Some (denorm_type (L.SmallT t0)))
+  | S.TypeS (x0, None) ->
+    Syntax.TypeS (x0, None)
   | S.ValS (x0, t0) ->
     Syntax.ValS (x0, denorm_type (L.SmallT t0))

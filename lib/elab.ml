@@ -131,6 +131,8 @@ and large_term0 = function
     L.SmallE (small_term0 e0')
   | L.FunE (x0, e0) ->
     L.FunE (x0, large_term0 e0)
+  | L.FunModE (x0, s0, e0) ->
+    L.FunModE (x0, signature0 s0, large_term0 e0)
   | L.AppE (e0, e1) ->
     L.AppE (large_term0 e0, large_term0 e1)
   | L.IfE (e0, e1, e2) ->
@@ -151,6 +153,8 @@ and large_term1 = function
     L.SmallE (small_term1 e0')
   | L.FunE (x0, e0) ->
     L.FunE (x0, large_term1 e0)
+  | L.FunModE (x0, s0, e0) ->
+    L.FunModE (x0, signature1 s0, large_term1 e0)
   | L.AppE (e0, e1) ->
     L.AppE (large_term1 e0, large_term1 e1)
   | L.IfE (e0, e1, e2) ->
@@ -172,8 +176,10 @@ and signature0 = function
   | S.Sharing (s0, x0, t0) ->
     S.Sharing (signature0 s0, x0, small_type0 t0)
 and signature_component0 = function
-  | S.TypeS (x0, t0) ->
-    S.TypeS (x0, small_type0 t0)
+  | S.TypeS (x0, Some t0) ->
+    S.TypeS (x0, Some (small_type0 t0))
+  | S.TypeS (x0, None) ->
+    S.TypeS (x0, None)
   | S.ValS (x0, t0) ->
     S.ValS (x0, small_type0 t0)
 
@@ -183,8 +189,10 @@ and signature1 = function
   | S.Sharing (s0, x0, t0) ->
     S.Sharing (signature1 s0, x0, small_type1 t0)
 and signature_component1 = function
-  | S.TypeS (x0, t0) ->
-    S.TypeS (x0, small_type1 t0)
+  | S.TypeS (x0, Some t0) ->
+    S.TypeS (x0, Some (small_type1 t0))
+  | S.TypeS (x0, None) ->
+    S.TypeS (x0, None)
   | S.ValS (x0, t0) ->
     S.ValS (x0, S.CodT (small_type1 t0))
 

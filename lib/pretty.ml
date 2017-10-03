@@ -53,6 +53,11 @@ and pp_core_term: core_term -> string = function
     Printf.sprintf "%s.%s" 
       (pp_path p0)
       (pp_var x0)
+  | FunModE (x0, s0, e0) ->
+    Printf.sprintf "(fun (module %s : %s) -> %s)"
+      (pp_var x0)
+      (pp_mod_type s0)
+      (pp_core_term e0)
   | FunE (x0, e0) ->
     Printf.sprintf "(fun %s -> %s)"
       (pp_var x0)
@@ -174,10 +179,13 @@ and pp_mod_type: mod_type -> string = function
 and pp_signature: signature -> string =
   fun cs0 -> String.concat " " @@ List.map pp_signature_component cs0
 and pp_signature_component: signature_component -> string = function
-  | TypeS (x0, t0) ->
+  | TypeS (x0, Some t0) ->
     Printf.sprintf "type %s = %s"
       (pp_var x0)
       (pp_core_type t0)
+  | TypeS (x0, None) ->
+    Printf.sprintf "type %s"
+      (pp_var x0)
   | ValS (x0, t0) ->
     Printf.sprintf "val %s : %s"
       (pp_var x0)
