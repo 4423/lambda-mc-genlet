@@ -50,6 +50,7 @@ open Syntax
 %token SINGLE_ARROW      // "->"
 %token DOUBLE_ARROW      // "->"
 %token BAR               // "|"
+%token DOLLAR            // "$"
 %token UNIT              // "()"
 %token TRUE              // "true"
 %token FALSE             // "false"
@@ -227,6 +228,8 @@ signature_component
 path
   : CON
     { VarP $1 }
+  | DOLLAR CON
+    { DollarP $2 }
   ;
 
 parameter_list

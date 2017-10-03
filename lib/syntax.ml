@@ -65,3 +65,4 @@ type var = string
 
  and path =
    | VarP of string
+   | DollarP of string

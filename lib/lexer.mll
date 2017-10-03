@@ -59,6 +59,8 @@ rule token = parse
     { GT }
 | ">="
     { GT_EQ }
+| "$"
+    { DOLLAR }
 | "("
     { LPAREN }
 | ")"

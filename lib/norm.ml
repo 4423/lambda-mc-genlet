@@ -58,6 +58,7 @@ module Small = struct
           
   and path =
     | VarP of var
+    | DollarP of var
 end
 
 module Large = struct
@@ -118,6 +119,8 @@ and norm_term env = function
     L.SmallE (S.VarE x0)
   | Syntax.AccE (Syntax.VarP x0, x1) ->
     L.SmallE (S.AccE (S.VarP x0, x1))
+  | Syntax.AccE (Syntax.DollarP x0, x1) ->
+    L.SmallE (S.AccE (S.DollarP x0, x1))
   | Syntax.FunE (x0, e0) -> begin
       match norm_term env e0 with
       | L.SmallE e0' ->
@@ -184,6 +187,8 @@ and norm_type env = function
     L.SmallT (S.VarT x0)
   | Syntax.AccT (Syntax.VarP x0, x1) ->
     L.SmallT (S.AccT (S.VarP x0, x1))
+  | Syntax.AccT (Syntax.DollarP x0, x1) ->
+    L.SmallT (S.AccT (S.DollarP x0, x1))
   | Syntax.ArrT (t0, t1) -> begin
       match norm_type env t0, norm_type env t1 with
       | L.SmallT t0', L.SmallT t1' ->
@@ -292,6 +297,8 @@ and denorm_term = function
     Syntax.VarE x0
   | L.SmallE (S.AccE (S.VarP x0, x1)) ->
     Syntax.AccE (Syntax.VarP x0, x1)
+  | L.SmallE (S.AccE (S.DollarP x0, x1)) ->
+    Syntax.AccE (Syntax.DollarP x0, x1)
   | L.SmallE (S.LetE (x0, xs0, ys0, e0, e1)) ->
     Syntax.LetE (x0, xs0, ys0, denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
   | L.SmallE (S.LetRecE (x0, xs0, ys0, e0, e1)) ->
@@ -331,6 +338,8 @@ and denorm_type = function
     Syntax.VarT x0
   | L.SmallT (S.AccT (S.VarP x0, x1)) ->
     Syntax.AccT (Syntax.VarP x0, x1)
+  | L.SmallT (S.AccT (S.DollarP x0, x1)) ->
+    Syntax.AccT (Syntax.DollarP x0, x1)
   | L.SmallT (S.ArrT (t0, t1)) ->
     Syntax.ArrT (denorm_type (L.SmallT t0), denorm_type (L.SmallT t1))
   | L.SmallT (S.CodT t0) ->

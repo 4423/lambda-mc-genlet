@@ -44,6 +44,8 @@ and small_type0 = function
     S.VarT x0
   | S.AccT (S.VarP x0, x1) ->
     S.AccT (S.VarP x0, x1)
+  | S.AccT (S.DollarP x0, x1) ->
+    S.AccT (S.DollarP x0, x1)
   | S.ArrT (t0, t1) ->
     S.ArrT (small_type0 t0, small_type0 t1)
   | S.CodT t0 ->
@@ -55,6 +57,8 @@ and small_type1 = function
     S.VarT x0
   | S.AccT (S.VarP x0, x1) ->
     S.AccT (S.VarP x0, x1)
+  | S.AccT (S.DollarP x0, x1) ->
+    S.AccT (S.DollarP x0, x1)
   | S.ArrT (t0, t1) ->
     S.ArrT (small_type1 t0, small_type1 t1)
   | S.CodT _ ->
@@ -67,6 +71,8 @@ and small_term0 = function
     S.VarE x0
   | S.AccE (S.VarP x0, x1) ->
     S.AccE (S.VarP x0, x1)
+  | S.AccE (S.DollarP x0, x1) ->
+    S.AccE (S.DollarP x0, x1)
   | S.LetE (x0, xs0, ys0, e0, e1) ->
     S.LetE (x0, xs0, ys0, small_term0 e0, small_term0 e1)
   | S.LetRecE (x0, xs0, ys0, e0, e1) ->
@@ -89,6 +95,8 @@ and small_term1 = function
     S.VarE x0
   | S.AccE (S.VarP x0, x1) ->
     S.AccE (S.VarP x0, x1)
+  | S.AccE (S.DollarP x0, x1) ->
+    S.AccE (S.DollarP x0, x1)
   | S.LetE (x0, xs0, ys0, e0, e1) ->
     S.LetE (x0, xs0, ys0, small_term1 e0, small_term1 e1)
   | S.LetRecE (x0, xs0, ys0, e0, e1) ->

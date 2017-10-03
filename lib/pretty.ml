@@ -194,3 +194,5 @@ and pp_signature_component: signature_component -> string = function
 and pp_path: path -> string = function
   | VarP x0 ->
     (pp_var x0)
+  | DollarP x0 ->
+    "$" ^ (pp_var x0)
