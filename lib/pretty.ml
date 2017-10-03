@@ -23,9 +23,23 @@ open Syntax
 
 external identity: 'a -> 'a = "%identity"
 
-let rec f: (Syntax.mod_decl list * Syntax.core_term) -> string =
-  fun (decl_list, e) ->
-    pp_mod_decl_list decl_list ^ "\n" ^ pp_core_term e
+let rec f: (Syntax.mod_decl list * Syntax.toplevel list) -> string =
+  fun (decl_list, toplevel_list) ->
+    pp_mod_decl_list decl_list ^ "\n" ^ pp_toplevel_list toplevel_list
+
+and pp_toplevel_list: toplevel list -> string =
+  fun toplevel_list ->
+    String.concat " " @@ List.map pp_toplevel toplevel_list
+and pp_toplevel: toplevel -> string = function
+  | Toplevel_Let (x0, e0) ->
+    Printf.sprintf "let %s = %s;;"
+      (pp_var x0)
+      (pp_core_term e0)
+  | Toplevel_LetRec (x0, xs0, e0) ->
+    Printf.sprintf "let rec %s %s = %s;;"
+      (pp_var x0)
+      (String.concat " " @@ List.map pp_var xs0)
+      (pp_core_term e0)
 
 and pp_var: var -> string =
   identity

@@ -38,6 +38,7 @@ open Syntax
 %token COMMA             // ","
 %token DOT               // "."
 %token SEM               // ";"
+%token SEM_SEM           // ";;"
 %token COL               // ":"
 %token COL_COL           // "::"
 %token LPAREN            // "("
@@ -82,7 +83,7 @@ open Syntax
 %nonassoc UNARY
 %left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN
 
-%type <Syntax.mod_decl list * Syntax.core_term> main
+%type <Syntax.mod_decl list * Syntax.toplevel list> main
 %type <Syntax.core_term> core_term
 %type <Syntax.core_type> core_type
 %type <Syntax.mod_term> mod_term
@@ -91,9 +92,21 @@ open Syntax
 %%
 
 main
-  : mod_decl_list core_term EOF
-    { List.rev $1, $2 }
+  : mod_decl_list toplevel_list EOF
+    { List.rev $1, List.rev $2 }
   ;  
+
+toplevel_list
+  : toplevel_list toplevel
+    { $2 :: $1 }
+  |
+    { [] }
+  ;
+
+toplevel
+  : LET VAR EQ core_term SEM_SEM
+    { Toplevel_Let ($2, $4) }
+  ;
 
 core_type
   : LPAREN core_type RPAREN

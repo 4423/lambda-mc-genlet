@@ -20,6 +20,9 @@
  * THE SOFTWARE.
  *)
 type var = string
+ and toplevel =
+   | Toplevel_Let    of var * core_term
+   | Toplevel_LetRec of var * var list * core_term
  and core_term =
    | VarE    of var
    | AccE    of path * var

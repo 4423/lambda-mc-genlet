@@ -87,6 +87,8 @@ rule token = parse
     { DOT }
 | ";"
     { SEM }
+| ";;"
+    { SEM_SEM }
 | "()"
     { UNIT }
 | "true"

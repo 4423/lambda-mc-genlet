@@ -25,13 +25,18 @@ module L = Large
 
 external identity: 'a -> 'a = "%identity"
 
-let rec f : (S.mod_decl list * L.core_term) -> (S.mod_decl list * L.core_term) =
-  fun (decl_list, e) ->
+let rec f : (S.mod_decl list * L.toplevel list) -> (S.mod_decl list * L.toplevel list) =
+  fun (decl_list, toplevel_list) ->
     let decl_list' = List.map begin function
       | S.StructureDec (x0, m0) -> S.StructureDec (x0, structure0 m0)
       | S.SignatureDec (x0, s0) -> S.SignatureDec (x0, signature0 s0)
     end decl_list in
-    decl_list', large_term0 e
+    let toplevel_list' = List.map begin function
+      | L.Toplevel_Let (x0, e0) -> L.Toplevel_Let (x0, large_term0 e0)
+      | L.Toplevel_LetRec _ ->
+        failwith "not implemented"
+    end toplevel_list in
+    decl_list', toplevel_list'
 
 and small_type0 = function
   | S.VarT x0 ->
@@ -155,8 +160,6 @@ and large_term1 = function
 and signature0 = function
   | S.Signature cs0 ->
     S.Signature (List.map signature_component0 cs0)
-  | S.VarS x0 ->
-    S.VarS x0
 and signature_component0 = function
   | S.TypeDec (x0, t0) ->
     S.TypeDec (x0, small_type0 t0)
@@ -166,8 +169,6 @@ and signature_component0 = function
 and signature1 = function
   | S.Signature cs0 ->
     S.Signature (List.map signature_component1 cs0)
-  | S.VarS x0 ->
-    S.VarS x0
 and signature_component1 = function
   | S.TypeDec (x0, t0) ->
     S.TypeDec (x0, small_type1 t0)
@@ -177,8 +178,6 @@ and signature_component1 = function
 and structure0 = function
   | S.Structure cs0 ->
     S.Structure (List.fold_right structure_component0 cs0 [])
-  | S.VarM x0 ->
-    S.VarM x0
 and structure_component0 e cs =
   match e with
   | S.TypeDef (x0, t0) ->
@@ -190,8 +189,6 @@ and structure1 = function
   | S.Structure cs0 -> 
     let (_, cs0) = List.fold_left structure_component1 (identity, []) cs0 in
     S.Structure (List.rev cs0)
-  | S.VarM x0 ->
-    S.VarM x0
 
 and structure_component1 (f, cs) = function
   | S.TypeDef (x0, t0) ->

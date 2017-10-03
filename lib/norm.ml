@@ -42,13 +42,13 @@ module Small = struct
     | StructureDec of var * mod_term
     | SignatureDec of var * mod_type
 
-  and mod_term  = Structure of structure | VarM of var
+  and mod_term  = Structure of structure
   and structure = structure_component list
   and structure_component =
     | TypeDef  of var * core_type
     | ValueDef of var * core_type * core_term
           
-  and mod_type  = Signature of signature | VarS of var
+  and mod_type  = Signature of signature      
   and signature = signature_component list
   and signature_component =
     | TypeDec  of var * core_type
@@ -59,7 +59,10 @@ module Small = struct
 end
 
 module Large = struct
-  type core_term =
+  type toplevel =
+    | Toplevel_Let    of Small.var * core_term
+    | Toplevel_LetRec of Small.var * Small.var list * core_term
+  and core_term =
     | SmallE  of Small.core_term
     | LetE    of Small.var * core_term * core_term
     | LetModE of Small.var * core_term * core_term
@@ -78,53 +81,72 @@ end
 module S = Small
 module L = Large
 
-let rec f: (Syntax.mod_decl list * Syntax.core_term) -> (Small.mod_decl list * Large.core_term) =
-  fun (decl_list, e) -> 
-    let decl_list' = List.map begin function
-      | Syntax.StructureDec (x0, m0) -> S.StructureDec (x0, norm_structure m0)
-      | Syntax.SignatureDec (x0, s0) -> S.SignatureDec (x0, norm_signature s0)
-    end decl_list in
-    decl_list', norm_term e
+let rec lookup_signature name = function
+  | S.SignatureDec (name', s0) :: decl_list when name = name' -> Some s0
+  | _ :: decl_list ->
+    lookup_signature name decl_list
+  | _ ->
+    None
 
-and norm_term = function
+let rec lookup_structure name = function
+  | S.StructureDec (name', m0) :: decl_list when name = name' -> Some m0
+  | _ :: decl_list ->
+    lookup_structure name decl_list
+  | _ ->
+    None
+
+let rec f: (Syntax.mod_decl list * Syntax.toplevel list) -> (Small.mod_decl list * Large.toplevel list) =
+  fun (decl_list, toplevel_list) -> 
+    let decl_list' = List.rev @@ List.fold_left begin fun env -> function
+      | Syntax.StructureDec (x0, m0) -> S.StructureDec (x0, norm_structure env m0) :: env
+      | Syntax.SignatureDec (x0, s0) -> S.SignatureDec (x0, norm_signature env s0) :: env
+    end [] decl_list in
+    let toplevel_list' = List.map begin function
+      | Syntax.Toplevel_Let (x0, e0) -> L.Toplevel_Let (x0, norm_term decl_list' e0)
+      | Syntax.Toplevel_LetRec (x0, xs0, e0) ->
+        failwith "not implemented"
+    end toplevel_list in
+    decl_list', toplevel_list'
+
+and norm_term env = function
   | Syntax.VarE x0 ->
     L.SmallE (S.VarE x0)
   | Syntax.AccE (Syntax.VarP x0, x1) ->
     L.SmallE (S.AccE (S.VarP x0, x1))
   | Syntax.FunE (x0, e0) -> begin
-      match norm_term e0 with
+      match norm_term env e0 with
       | L.SmallE e0' ->
         L.SmallE (S.FunE (x0, e0'))
       | e0 ->
         L.FunE (x0, e0)
     end
   | Syntax.AppE (e0, e1) -> begin
-      match norm_term e0, norm_term e1 with
+      match norm_term env e0, norm_term env e1 with
       | L.SmallE e0', L.SmallE e1' ->
         L.SmallE (S.AppE (e0', e1'))
       | e0, e1 ->
         L.AppE (e0, e1)
     end
   | Syntax.LetE (x0, e0, e1) -> begin
-      match norm_term e0, norm_term e1 with
+      match norm_term env e0, norm_term env e1 with
       | L.SmallE e0', L.SmallE e1' ->
         L.SmallE (S.LetE (x0, e0', e1'))
       | e0, e1 ->
         L.LetE (x0, e0, e1)
     end
   | Syntax.LetModE (x0, e0, e1) ->
-    L.LetModE (x0, norm_term e0, norm_term e1)
+    L.LetModE (x0, norm_term env e0, norm_term env e1)
   | Syntax.IfE (e0, e1, e2) -> begin
-      match norm_term e0, norm_term e1, norm_term e2 with
+      match norm_term env e0, norm_term env e1, norm_term env e2 with
       | L.SmallE e0', L.SmallE e1', L.SmallE e2' ->
         L.SmallE (S.IfE (e0', e1', e2'))
       | e0, e1, e2 ->
         L.IfE (e0, e1, e2)
     end
   | Syntax.ModE (m0, s0) ->
-    L.ModE (norm_structure m0, norm_signature s0)
+    L.ModE (norm_structure env m0, norm_signature env s0)
   | Syntax.CodE e0 -> begin
-      match norm_term e0 with
+      match norm_term env e0 with
       | L.SmallE e0' -> L.SmallE (S.CodE e0')
       | L.FunE _ ->
         failwith "[error] function (large-term) can not appear within a code brakcet"
@@ -132,31 +154,31 @@ and norm_term = function
         L.CodE e0
     end
   | Syntax.EscE e0 -> begin
-      match norm_term e0 with
+      match norm_term env e0 with
       | L.SmallE e0' -> L.SmallE (S.EscE e0')
       | _ ->
         failwith "[error] ``<esc>`` is not allowed to apply to large term"
     end
   | Syntax.RunE e0 -> begin
-      match norm_term e0 with
+      match norm_term env e0 with
       | L.SmallE e0' -> L.SmallE (S.RunE e0')
       | _ ->
         failwith "[error] ``<run>`` is not allowed to apply to large term"
     end
-and norm_type = function
+and norm_type env = function
   | Syntax.VarT x0 ->
     L.SmallT (S.VarT x0)
   | Syntax.AccT (Syntax.VarP x0, x1) ->
     L.SmallT (S.AccT (S.VarP x0, x1))
   | Syntax.ArrT (t0, t1) -> begin
-      match norm_type t0, norm_type t1 with
+      match norm_type env t0, norm_type env t1 with
       | L.SmallT t0', L.SmallT t1' ->
         L.SmallT (S.ArrT (t0', t1'))
       | t0, t1 ->
         L.ArrT (t0, t1)
     end
   | Syntax.CodT t0 -> begin
-      match norm_type t0 with
+      match norm_type env t0 with
       | L.SmallT t0' -> L.SmallT (S.CodT t0')
       | L.ModT s0 ->
         L.ModCodT s0
@@ -164,59 +186,76 @@ and norm_type = function
         failwith "[error] ``code`` is not allowed to apply to large type"
     end
   | Syntax.EscT t0 -> begin
-      match norm_type t0 with
+      match norm_type env t0 with
       | L.SmallT t0' -> L.SmallT (S.EscT t0')
       | _ ->
         failwith "[error] ``%`` is not allowed to apply to large type"
     end
   | Syntax.ModT s0 ->
-    L.ModT (norm_signature s0)
+    L.ModT (norm_signature env s0)
 
-and norm_structure = function
+and norm_structure env = function
   | Syntax.Structure cs0 ->
-    S.Structure (List.map norm_structure_component cs0)
-  | Syntax.VarM x0 ->
-    S.VarM x0
-and norm_structure_component = function
+    S.Structure (List.map (norm_structure_component env) cs0)
+  | Syntax.VarM x0 -> begin
+      match lookup_structure x0 env with
+      | Some m0 -> m0
+      | None ->
+        failwith (Printf.sprintf "unbound module structure '%s'" x0)
+    end
+and norm_structure_component env = function
   | Syntax.TypeDef (x0, t0) -> begin
-      match norm_type t0 with
+      match norm_type env t0 with
       | L.SmallT t0' -> S.TypeDef (x0, t0')
       | _ ->
         failwith "[error] large-term can not appear within a module structure"
     end
   | Syntax.ValueDef (x0, t0, e0) -> begin
-      match norm_type t0, norm_term e0 with
+      match norm_type env t0, norm_term env e0 with
       | L.SmallT t0', L.SmallE e0' -> S.ValueDef (x0, t0', e0')
       | _ ->
         failwith "[error] large term/type can not appear within a module structure"
     end
 
-and norm_signature = function
+and norm_signature env = function
   | Syntax.Signature cs0 ->
-    S.Signature (List.map norm_signature_component cs0)
-  | Syntax.VarS x0 ->
-    S.VarS x0
-and norm_signature_component = function
+    S.Signature (List.map (norm_signature_component env) cs0)
+  | Syntax.VarS x0 -> begin
+      match lookup_signature x0 env with
+      | Some s0 -> s0
+      | None ->
+        failwith (Printf.sprintf "unbound module signature '%s'" x0)
+    end
+and norm_signature_component env = function
   | Syntax.TypeDec (x0, t0) -> begin
-      match norm_type t0 with
+      match norm_type env t0 with
       | L.SmallT t0' -> S.TypeDec (x0, t0')
       | _ ->
         failwith "[error] large-type can not appear within a module signature"
     end
   | Syntax.ValueDec (x0, t0) -> begin
-      match norm_type t0 with
+      match norm_type env t0 with
       | L.SmallT t0' -> S.ValueDec (x0, t0')
       | _ ->
         failwith "[error] large-type can not appear within a module signature"
     end
 
-let rec g: (Small.mod_decl list * Large.core_term) -> (Syntax.mod_decl list * Syntax.core_term) =
-  fun (decl_list, e) -> 
+let toplevel_decl_list: Syntax.mod_decl list ref =
+  ref []
+
+let rec g: (Small.mod_decl list * Large.toplevel list) -> (Syntax.mod_decl list * Syntax.toplevel list) =
+  fun (decl_list, toplevel_list) -> 
+    toplevel_decl_list := [];
     let decl_list' = List.map begin function
       | S.StructureDec (x0, m0) -> Syntax.StructureDec (x0, denorm_structure m0)
       | S.SignatureDec (x0, s0) -> Syntax.SignatureDec (x0, denorm_signature s0)
     end decl_list in
-    decl_list', denorm_term e
+    let toplevel_list' = List.map begin function
+      | L.Toplevel_Let (x0, e0) -> Syntax.Toplevel_Let (x0, denorm_term e0)
+      | L.Toplevel_LetRec _ ->
+        failwith "not implemented"
+    end toplevel_list in
+    (!toplevel_decl_list @ decl_list'), toplevel_list'
 
 and denorm_term = function
   | L.SmallE (S.VarE x0) ->
@@ -272,8 +311,6 @@ and denorm_type = function
 and denorm_structure = function
   | S.Structure cs0 ->
     Syntax.Structure (List.map denorm_structure_component cs0)
-  | S.VarM x0 ->
-    Syntax.VarM x0
 and denorm_structure_component = function
   | S.TypeDef (x0, t0) ->
     Syntax.TypeDef (x0, denorm_type (L.SmallT t0))
@@ -282,8 +319,9 @@ and denorm_structure_component = function
 
 and denorm_signature = function
   | S.Signature cs0 ->
-    Syntax.Signature (List.map denorm_signature_component cs0)
-  | S.VarS x0 ->
+    let x0 = Fresh.con () in
+    let s0 = Syntax.Signature (List.map denorm_signature_component cs0) in
+    toplevel_decl_list := !toplevel_decl_list @ [Syntax.SignatureDec (x0, s0)];
     Syntax.VarS x0
 and denorm_signature_component = function
   | S.TypeDec (x0, t0) ->
