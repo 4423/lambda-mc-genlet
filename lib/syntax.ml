@@ -21,14 +21,15 @@
  *)
 type var = string
  and toplevel =
-   | Toplevel_Let    of var * core_term
-   | Toplevel_LetRec of var * var list * core_term
+   | Toplevel_Let    of var * var list * var list * core_term
+   | Toplevel_LetRec of var * var list * var list * core_term
  and core_term =
    | VarE    of var
    | AccE    of path * var
    | FunE    of var * core_term
    | AppE    of core_term * core_term
-   | LetE    of var * core_term * core_term
+   | LetE    of var * var list * var list * core_term * core_term
+   | LetRecE of var * var list * var list * core_term * core_term
    | LetModE of var * core_term * core_term
    | IfE     of core_term * core_term * core_term
    | ModE    of mod_term * mod_type
@@ -48,17 +49,18 @@ type var = string
    | StructureDec of var * mod_term
    | SignatureDec of var * mod_type
 
- and mod_term  = Structure of structure | VarM of string
+ and mod_term  = Structure of structure | VarM of var
  and structure = structure_component list
  and structure_component =
-   | TypeDef  of var * core_type
-   | ValueDef of var * core_type * core_term
+   | TypeM   of var * core_type
+   | LetM    of var * var list * var list * core_term
+   | LetRecM of var * var list * var list * core_term
 
- and mod_type  = Signature of signature | VarS of string
+ and mod_type  = Signature of signature | VarS of var | Sharing of mod_type * var * core_type
  and signature = signature_component list
  and signature_component =
-   | TypeDec  of var * core_type
-   | ValueDec of var * core_type
+   | TypeS  of var * core_type
+   | ValS of var * core_type
 
  and path =
    | VarP of string

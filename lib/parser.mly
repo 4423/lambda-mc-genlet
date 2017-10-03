@@ -67,6 +67,7 @@ open Syntax
 %token END               // "end"
 %token VAL               // "val"
 %token TYPE              // "type"
+%token WITH              // "with"
 %token CODE              // "code"
 %token LCOD              // ".<"
 %token RCOD              // ">."
@@ -75,6 +76,7 @@ open Syntax
 %token EOF
 %nonassoc BAR
 %nonassoc IN ELSE
+%left WITH
 %left EQ NE GT GT_EQ LE LE_EQ
 %right SINGLE_ARROW DOUBLE_ARROW
 %right COL_COL
@@ -104,8 +106,10 @@ toplevel_list
   ;
 
 toplevel
-  : LET VAR EQ core_term SEM_SEM
-    { Toplevel_Let ($2, $4) }
+  : LET VAR type_parameter_list parameter_list EQ core_term SEM_SEM
+    { Toplevel_Let ($2, List.rev $3, List.rev $4, $6) }
+  | LET REC VAR type_parameter_list parameter_list EQ core_term SEM_SEM
+    { Toplevel_LetRec ($3, List.rev $4, List.rev $5, $7) }
   ;
 
 core_type
@@ -130,8 +134,10 @@ core_term
     { AccE ($1, $3) }
   | FUN VAR SINGLE_ARROW core_term
     { FunE ($2, $4) }  
-  | LET VAR EQ core_term IN core_term
-    { LetE ($2, $4, $6) }
+  | LET VAR type_parameter_list parameter_list EQ core_term IN core_term
+    { LetE ($2, List.rev $3, List.rev $4, $6, $8) }
+  | LET REC VAR type_parameter_list parameter_list EQ core_term IN core_term
+    { LetRecE ($3, List.rev $4, List.rev $5, $7, $9) }
   | LET MODULE CON EQ core_term IN core_term
     { LetModE ($3, $5, $7) }
   | IF core_term THEN core_term ELSE core_term
@@ -182,9 +188,11 @@ structure
 
 structure_component
   : TYPE VAR EQ core_type
-    { TypeDef ($2, $4) }
-  | LET VAR COL core_type EQ core_term
-    { ValueDef ($2, $4, $6) }
+    { TypeM ($2, $4) }
+  | LET REC VAR type_parameter_list parameter_list EQ core_term
+    { LetRecM ($3, List.rev $4, List.rev $5, $7) }
+  | LET VAR type_parameter_list parameter_list EQ core_term
+    { LetM ($2, List.rev $3, List.rev $4, $6) }
   ;
 
 mod_type
@@ -192,6 +200,8 @@ mod_type
     { Signature (List.rev $2) }
   | CON
     { VarS $1 } 
+  | mod_type WITH TYPE VAR EQ core_type
+    { Sharing ($1, $4, $6) }
   ;
 
 signature
@@ -203,12 +213,35 @@ signature
 
 signature_component
   : TYPE VAR EQ core_type
-    { TypeDec ($2, $4) }
+    { TypeS ($2, $4) }
   | VAL VAR COL core_type
-    { ValueDec ($2, $4) }
+    { ValS ($2, $4) }
   ;
 
 path
   : CON
     { VarP $1 }
   ;
+
+parameter_list
+  : parameter_list parameter
+    { $2 :: $1 }
+  |
+    { [] }
+  ;
+parameter
+  : VAR
+    { $1 }
+  ;
+
+type_parameter_list
+  : type_parameter_list type_parameter
+    { $2 :: $1 }
+  |
+    { [] }
+  ;
+type_parameter
+  : LPAREN TYPE VAR RPAREN
+    { $3 }
+  ;
+

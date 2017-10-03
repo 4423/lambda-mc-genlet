@@ -123,6 +123,8 @@ rule token = parse
     { VAL }
 | "type"
     { TYPE }
+| "with"
+    { WITH }
 | "code"
     { CODE }
 | digit+

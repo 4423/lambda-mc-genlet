@@ -32,9 +32,10 @@ let rec f : (S.mod_decl list * L.toplevel list) -> (S.mod_decl list * L.toplevel
       | S.SignatureDec (x0, s0) -> S.SignatureDec (x0, signature0 s0)
     end decl_list in
     let toplevel_list' = List.map begin function
-      | L.Toplevel_Let (x0, e0) -> L.Toplevel_Let (x0, large_term0 e0)
-      | L.Toplevel_LetRec _ ->
-        failwith "not implemented"
+      | L.Toplevel_Let (x0, xs0, ys0, e0) ->
+        L.Toplevel_Let (x0, xs0, ys0, large_term0 e0)
+      | L.Toplevel_LetRec (x0, xs0, ys0, e0) ->
+        L.Toplevel_LetRec (x0, xs0, ys0, large_term0 e0)
     end toplevel_list in
     decl_list', toplevel_list'
 
@@ -66,8 +67,10 @@ and small_term0 = function
     S.VarE x0
   | S.AccE (S.VarP x0, x1) ->
     S.AccE (S.VarP x0, x1)
-  | S.LetE (x0, e0, e1) ->
-    S.LetE (x0, small_term0 e0, small_term0 e1)
+  | S.LetE (x0, xs0, ys0, e0, e1) ->
+    S.LetE (x0, xs0, ys0, small_term0 e0, small_term0 e1)
+  | S.LetRecE (x0, xs0, ys0, e0, e1) ->
+    S.LetRecE (x0, xs0, ys0, small_term0 e0, small_term0 e1)
   | S.FunE (x0, e0) ->
     S.FunE (x0, small_term0 e0)
   | S.AppE (e0, e1) ->
@@ -86,8 +89,10 @@ and small_term1 = function
     S.VarE x0
   | S.AccE (S.VarP x0, x1) ->
     S.AccE (S.VarP x0, x1)
-  | S.LetE (x0, e0, e1) ->
-    S.LetE (x0, small_term1 e0, small_term1 e1)
+  | S.LetE (x0, xs0, ys0, e0, e1) ->
+    S.LetE (x0, xs0, ys0, small_term1 e0, small_term1 e1)
+  | S.LetRecE (x0, xs0, ys0, e0, e1) ->
+    S.LetRecE (x0, xs0, ys0, small_term1 e0, small_term1 e1)
   | S.FunE (x0, e0) ->
     S.FunE (x0, small_term1 e0)
   | S.AppE (e0, e1) ->
@@ -130,8 +135,10 @@ and large_term0 = function
     L.AppE (large_term0 e0, large_term0 e1)
   | L.IfE (e0, e1, e2) ->
     L.IfE (large_term0 e0, large_term0 e1, large_term0 e2)
-  | L.LetE (x0, e0, e1) ->
-    L.LetE (x0, large_term0 e0, large_term0 e1)
+  | L.LetE (x0, xs0, ys0, e0, e1) ->
+    L.LetE (x0, xs0, ys0, large_term0 e0, large_term0 e1)
+  | L.LetRecE (x0, xs0, ys0, e0, e1) ->
+    L.LetRecE (x0, xs0, ys0, large_term0 e0, large_term0 e1)
   | L.LetModE (x0, e0, e1) ->
     L.LetModE (x0, large_term0 e0, large_term0 e1)
   | L.ModE (m0, s0) ->
@@ -148,8 +155,10 @@ and large_term1 = function
     L.AppE (large_term1 e0, large_term1 e1)
   | L.IfE (e0, e1, e2) ->
     L.IfE (large_term1 e0, large_term1 e1, large_term1 e2)
-  | L.LetE (x0, e0, e1) ->
-    L.LetE (x0, large_term1 e0, large_term1 e1)
+  | L.LetE (x0, xs0, ys0, e0, e1) ->
+    L.LetE (x0, xs0, ys0, large_term1 e0, large_term1 e1)
+  | L.LetRecE (x0, xs0, ys0, e0, e1) ->
+    L.LetRecE (x0, xs0, ys0, large_term1 e0, large_term1 e1)
   | L.LetModE (x0, e0, e1) ->
     L.LetModE (x0, large_term1 e0, large_term1 e1)
   | L.ModE (m0, s0) ->
@@ -160,30 +169,36 @@ and large_term1 = function
 and signature0 = function
   | S.Signature cs0 ->
     S.Signature (List.map signature_component0 cs0)
+  | S.Sharing (s0, x0, t0) ->
+    S.Sharing (signature0 s0, x0, small_type0 t0)
 and signature_component0 = function
-  | S.TypeDec (x0, t0) ->
-    S.TypeDec (x0, small_type0 t0)
-  | S.ValueDec (x0, t0) ->
-    S.ValueDec (x0, small_type0 t0)
+  | S.TypeS (x0, t0) ->
+    S.TypeS (x0, small_type0 t0)
+  | S.ValS (x0, t0) ->
+    S.ValS (x0, small_type0 t0)
 
 and signature1 = function
   | S.Signature cs0 ->
     S.Signature (List.map signature_component1 cs0)
+  | S.Sharing (s0, x0, t0) ->
+    S.Sharing (signature1 s0, x0, small_type1 t0)
 and signature_component1 = function
-  | S.TypeDec (x0, t0) ->
-    S.TypeDec (x0, small_type1 t0)
-  | S.ValueDec (x0, t0) ->
-    S.ValueDec (x0, S.CodT (small_type1 t0))
+  | S.TypeS (x0, t0) ->
+    S.TypeS (x0, small_type1 t0)
+  | S.ValS (x0, t0) ->
+    S.ValS (x0, S.CodT (small_type1 t0))
 
 and structure0 = function
   | S.Structure cs0 ->
     S.Structure (List.fold_right structure_component0 cs0 [])
 and structure_component0 e cs =
   match e with
-  | S.TypeDef (x0, t0) ->
-    S.TypeDef (x0, small_type0 t0) :: cs
-  | S.ValueDef (x0, t0, e0) ->
-    S.ValueDef (x0, small_type0 t0, small_term0 e0) :: cs
+  | S.TypeM (x0, t0) ->
+    S.TypeM (x0, small_type0 t0) :: cs
+  | S.LetRecM (x0, xs0, ys0, e0) ->
+    S.LetRecM (x0, xs0, ys0, small_term0 e0) :: cs
+  | S.LetM (x0, xs0, ys0, e0) ->
+    S.LetM (x0, xs0, ys0, small_term0 e0) :: cs
 
 and structure1 = function
   | S.Structure cs0 -> 
@@ -191,13 +206,15 @@ and structure1 = function
     S.Structure (List.rev cs0)
 
 and structure_component1 (f, cs) = function
-  | S.TypeDef (x0, t0) ->
+  | S.TypeM (x0, t0) ->
     let t1 = small_type1 t0 in
-    (f, S.TypeDef (x0, t1) :: cs)
-  | S.ValueDef (x0, t0, e0) ->
-    let t1 = small_type1 t0 in
+    (f, S.TypeM (x0, t1) :: cs)
+  | S.LetM (x0, xs0, ys0, e0) ->
     let e1 = small_term1 e0 in
-    (insert_let f x0 e1, S.ValueDef (x0, S.CodT t1, S.CodE (f e1)) :: cs)
+    (insert_let f x0 xs0 ys0 e1, S.LetM (x0, xs0, ys0, S.CodE (f e1)) :: cs)
+  | S.LetRecM (x0, xs0, ys0, e0) ->
+    let e1 = small_term1 (S.LetRecE (x0, xs0, ys0, e0, S.VarE x0)) in
+    (insert_let f x0 [] [] e1, S.LetM (x0, [], [], S.CodE (f e1)) :: cs)
 
-and insert_let f x0 e0 =
-  fun e1 -> f (S.LetE (x0, e0, e1))
+and insert_let f x0 xs0 ys0 e0 =
+  fun e1 -> f (S.LetE (x0, xs0, ys0, e0, e1))

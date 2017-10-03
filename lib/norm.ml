@@ -24,7 +24,8 @@ module Small = struct
   and core_term =
     | VarE    of var
     | AccE    of path * var
-    | LetE    of var * core_term * core_term
+    | LetE    of var * var list * var list * core_term * core_term
+    | LetRecE of var * var list * var list * core_term * core_term
     | FunE    of var * core_term
     | AppE    of core_term * core_term
     | IfE     of core_term * core_term * core_term
@@ -45,14 +46,15 @@ module Small = struct
   and mod_term  = Structure of structure
   and structure = structure_component list
   and structure_component =
-    | TypeDef  of var * core_type
-    | ValueDef of var * core_type * core_term
+    | TypeM   of var * core_type
+    | LetRecM of var * var list * var list * core_term
+    | LetM    of var * var list * var list * core_term
           
-  and mod_type  = Signature of signature      
+  and mod_type  = Signature of signature | Sharing of mod_type * var * core_type
   and signature = signature_component list
   and signature_component =
-    | TypeDec  of var * core_type
-    | ValueDec of var * core_type
+    | TypeS of var * core_type
+    | ValS  of var * core_type
           
   and path =
     | VarP of var
@@ -60,11 +62,12 @@ end
 
 module Large = struct
   type toplevel =
-    | Toplevel_Let    of Small.var * core_term
-    | Toplevel_LetRec of Small.var * Small.var list * core_term
+    | Toplevel_Let    of Small.var * Small.var list * Small.var list * core_term
+    | Toplevel_LetRec of Small.var * Small.var list * Small.var list * core_term
   and core_term =
     | SmallE  of Small.core_term
-    | LetE    of Small.var * core_term * core_term
+    | LetE    of Small.var * Small.var list * Small.var list * core_term * core_term
+    | LetRecE of Small.var * Small.var list * Small.var list * core_term * core_term
     | LetModE of Small.var * core_term * core_term
     | FunE    of Small.var * core_term
     | AppE    of core_term * core_term
@@ -102,9 +105,10 @@ let rec f: (Syntax.mod_decl list * Syntax.toplevel list) -> (Small.mod_decl list
       | Syntax.SignatureDec (x0, s0) -> S.SignatureDec (x0, norm_signature env s0) :: env
     end [] decl_list in
     let toplevel_list' = List.map begin function
-      | Syntax.Toplevel_Let (x0, e0) -> L.Toplevel_Let (x0, norm_term decl_list' e0)
-      | Syntax.Toplevel_LetRec (x0, xs0, e0) ->
-        failwith "not implemented"
+      | Syntax.Toplevel_Let (x0, xs0, ys0, e0) ->
+        L.Toplevel_Let (x0, xs0, ys0, norm_term decl_list' e0)
+      | Syntax.Toplevel_LetRec (x0, xs0, ys0, e0) ->
+        L.Toplevel_LetRec (x0, xs0, ys0, norm_term decl_list' e0)
     end toplevel_list in
     decl_list', toplevel_list'
 
@@ -127,12 +131,19 @@ and norm_term env = function
       | e0, e1 ->
         L.AppE (e0, e1)
     end
-  | Syntax.LetE (x0, e0, e1) -> begin
+  | Syntax.LetE (x0, xs0, ys0, e0, e1) -> begin
       match norm_term env e0, norm_term env e1 with
       | L.SmallE e0', L.SmallE e1' ->
-        L.SmallE (S.LetE (x0, e0', e1'))
+        L.SmallE (S.LetE (x0, xs0, ys0, e0', e1'))
       | e0, e1 ->
-        L.LetE (x0, e0, e1)
+        L.LetE (x0, xs0, ys0, e0, e1)
+    end
+  | Syntax.LetRecE (x0, xs0, ys0, e0, e1) -> begin
+      match norm_term env e0, norm_term env e1 with
+      | L.SmallE e0', L.SmallE e1' ->
+        L.SmallE (S.LetRecE (x0, xs0, ys0, e0', e1'))
+      | e0, e1 ->
+        L.LetRecE (x0, xs0, ys0, e0, e1)
     end
   | Syntax.LetModE (x0, e0, e1) ->
     L.LetModE (x0, norm_term env e0, norm_term env e1)
@@ -204,15 +215,21 @@ and norm_structure env = function
         failwith (Printf.sprintf "unbound module structure '%s'" x0)
     end
 and norm_structure_component env = function
-  | Syntax.TypeDef (x0, t0) -> begin
+  | Syntax.TypeM (x0, t0) -> begin
       match norm_type env t0 with
-      | L.SmallT t0' -> S.TypeDef (x0, t0')
+      | L.SmallT t0' -> S.TypeM (x0, t0')
       | _ ->
         failwith "[error] large-term can not appear within a module structure"
     end
-  | Syntax.ValueDef (x0, t0, e0) -> begin
-      match norm_type env t0, norm_term env e0 with
-      | L.SmallT t0', L.SmallE e0' -> S.ValueDef (x0, t0', e0')
+  | Syntax.LetRecM (x0, xs0, ys0, e0) -> begin
+      match norm_term env e0 with
+      | L.SmallE e0' -> S.LetRecM (x0, xs0, ys0, e0')
+      | _ ->
+        failwith "[error] large term/type can not appear within a module structure"
+    end
+  | Syntax.LetM (x0, xs0, ys0, e0) -> begin
+      match norm_term env e0 with
+      | L.SmallE e0' -> S.LetM (x0, xs0, ys0, e0')
       | _ ->
         failwith "[error] large term/type can not appear within a module structure"
     end
@@ -220,6 +237,13 @@ and norm_structure_component env = function
 and norm_signature env = function
   | Syntax.Signature cs0 ->
     S.Signature (List.map (norm_signature_component env) cs0)
+  | Syntax.Sharing (s0, x0, t0) -> begin
+      match norm_type env t0 with
+      | L.SmallT t0' ->
+        S.Sharing (norm_signature env s0, x0, t0')
+      | _ ->
+        failwith "[error] large-type can not appear within a sharing constraints"
+    end
   | Syntax.VarS x0 -> begin
       match lookup_signature x0 env with
       | Some s0 -> s0
@@ -227,15 +251,15 @@ and norm_signature env = function
         failwith (Printf.sprintf "unbound module signature '%s'" x0)
     end
 and norm_signature_component env = function
-  | Syntax.TypeDec (x0, t0) -> begin
+  | Syntax.TypeS (x0, t0) -> begin
       match norm_type env t0 with
-      | L.SmallT t0' -> S.TypeDec (x0, t0')
+      | L.SmallT t0' -> S.TypeS (x0, t0')
       | _ ->
         failwith "[error] large-type can not appear within a module signature"
     end
-  | Syntax.ValueDec (x0, t0) -> begin
+  | Syntax.ValS (x0, t0) -> begin
       match norm_type env t0 with
-      | L.SmallT t0' -> S.ValueDec (x0, t0')
+      | L.SmallT t0' -> S.ValS (x0, t0')
       | _ ->
         failwith "[error] large-type can not appear within a module signature"
     end
@@ -251,9 +275,10 @@ let rec g: (Small.mod_decl list * Large.toplevel list) -> (Syntax.mod_decl list 
       | S.SignatureDec (x0, s0) -> Syntax.SignatureDec (x0, denorm_signature s0)
     end decl_list in
     let toplevel_list' = List.map begin function
-      | L.Toplevel_Let (x0, e0) -> Syntax.Toplevel_Let (x0, denorm_term e0)
-      | L.Toplevel_LetRec _ ->
-        failwith "not implemented"
+      | L.Toplevel_Let (x0, xs0, ys0, e0) ->
+        Syntax.Toplevel_Let (x0, xs0, ys0, denorm_term e0)
+      | L.Toplevel_LetRec (x0, xs0, ys0, e0) ->
+        Syntax.Toplevel_LetRec (x0, xs0, ys0, denorm_term e0)
     end toplevel_list in
     (!toplevel_decl_list @ decl_list'), toplevel_list'
 
@@ -262,8 +287,10 @@ and denorm_term = function
     Syntax.VarE x0
   | L.SmallE (S.AccE (S.VarP x0, x1)) ->
     Syntax.AccE (Syntax.VarP x0, x1)
-  | L.SmallE (S.LetE (x0, e0, e1)) ->
-    Syntax.LetE (x0, denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.LetE (x0, xs0, ys0, e0, e1)) ->
+    Syntax.LetE (x0, xs0, ys0, denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.LetRecE (x0, xs0, ys0, e0, e1)) ->
+    Syntax.LetRecE (x0, xs0, ys0, denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
   | L.SmallE (S.FunE (x0, e0)) ->
     Syntax.FunE (x0, denorm_term (L.SmallE e0))
   | L.SmallE (S.AppE (e0, e1)) ->
@@ -276,8 +303,10 @@ and denorm_term = function
     Syntax.EscE (denorm_term (L.SmallE e0))
   | L.SmallE (S.RunE e0) ->
     Syntax.RunE (denorm_term (L.SmallE e0))
-  | L.LetE (x0, e0, e1) ->
-    Syntax.LetE (x0, denorm_term e0, denorm_term e1)
+  | L.LetE (x0, xs0, ys0, e0, e1) ->
+    Syntax.LetE (x0, xs0, ys0, denorm_term e0, denorm_term e1)
+  | L.LetRecE (x0, xs0, ys0, e0, e1) ->
+    Syntax.LetRecE (x0, xs0, ys0, denorm_term e0, denorm_term e1)
   | L.LetModE (x0, e0, e1) ->
     Syntax.LetModE (x0, denorm_term e0, denorm_term e1)
   | L.FunE (x0, e0) ->
@@ -312,10 +341,12 @@ and denorm_structure = function
   | S.Structure cs0 ->
     Syntax.Structure (List.map denorm_structure_component cs0)
 and denorm_structure_component = function
-  | S.TypeDef (x0, t0) ->
-    Syntax.TypeDef (x0, denorm_type (L.SmallT t0))
-  | S.ValueDef (x0, t0, e0) ->
-    Syntax.ValueDef (x0, denorm_type (L.SmallT t0), denorm_term (L.SmallE e0))
+  | S.TypeM (x0, t0) ->
+    Syntax.TypeM (x0, denorm_type (L.SmallT t0))
+  | S.LetM (x0, xs0, ys0, e0) ->
+    Syntax.LetM (x0, xs0, ys0, denorm_term (L.SmallE e0))
+  | S.LetRecM (x0, xs0, ys0, e0) ->
+    Syntax.LetRecM (x0, xs0, ys0, denorm_term (L.SmallE e0))
 
 and denorm_signature = function
   | S.Signature cs0 ->
@@ -323,8 +354,11 @@ and denorm_signature = function
     let s0 = Syntax.Signature (List.map denorm_signature_component cs0) in
     toplevel_decl_list := !toplevel_decl_list @ [Syntax.SignatureDec (x0, s0)];
     Syntax.VarS x0
+  | S.Sharing (s0, x0, t0) ->
+    Syntax.Sharing (denorm_signature s0, x0, denorm_type (L.SmallT t0))
+
 and denorm_signature_component = function
-  | S.TypeDec (x0, t0) ->
-    Syntax.TypeDec (x0, denorm_type (L.SmallT t0))
-  | S.ValueDec (x0, t0) ->
-    Syntax.ValueDec (x0, denorm_type (L.SmallT t0))
+  | S.TypeS (x0, t0) ->
+    Syntax.TypeS (x0, denorm_type (L.SmallT t0))
+  | S.ValS (x0, t0) ->
+    Syntax.ValS (x0, denorm_type (L.SmallT t0))
