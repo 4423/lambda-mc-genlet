@@ -27,6 +27,7 @@ module Small = struct
     | LetE    of var * core_term * core_term
     | FunE    of var * core_term
     | AppE    of core_term * core_term
+    | IfE     of core_term * core_term * core_term
     | CodE    of core_term
     | EscE    of core_term
     | RunE    of core_term
@@ -64,6 +65,7 @@ module Large = struct
     | LetModE of Small.var * core_term * core_term
     | FunE    of Small.var * core_term
     | AppE    of core_term * core_term
+    | IfE     of core_term * core_term * core_term
     | CodE    of core_term
     | ModE    of Small.mod_term * Small.mod_type
   and core_type =
@@ -112,6 +114,13 @@ and norm_term = function
     end
   | Syntax.LetModE (x0, e0, e1) ->
     L.LetModE (x0, norm_term e0, norm_term e1)
+  | Syntax.IfE (e0, e1, e2) -> begin
+      match norm_term e0, norm_term e1, norm_term e2 with
+      | L.SmallE e0', L.SmallE e1', L.SmallE e2' ->
+        L.SmallE (S.IfE (e0', e1', e2'))
+      | e0, e1, e2 ->
+        L.IfE (e0, e1, e2)
+    end
   | Syntax.ModE (m0, s0) ->
     L.ModE (norm_structure m0, norm_signature s0)
   | Syntax.CodE e0 -> begin
@@ -220,6 +229,8 @@ and denorm_term = function
     Syntax.FunE (x0, denorm_term (L.SmallE e0))
   | L.SmallE (S.AppE (e0, e1)) ->
     Syntax.AppE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.IfE (e0, e1, e2)) ->
+    Syntax.IfE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1), denorm_term (L.SmallE e2))
   | L.SmallE (S.CodE e0) ->
     Syntax.CodE (denorm_term (L.SmallE e0))
   | L.SmallE (S.EscE e0) ->
@@ -234,6 +245,8 @@ and denorm_term = function
     Syntax.FunE (x0, denorm_term e0)
   | L.AppE (e0, e1) ->
     Syntax.AppE (denorm_term e0, denorm_term e1)
+  | L.IfE (e0, e1, e2) ->
+    Syntax.IfE (denorm_term e0, denorm_term e1, denorm_term e2)
   | L.CodE e0 ->
     Syntax.CodE (denorm_term e0)
   | L.ModE (m0, s0) ->

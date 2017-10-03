@@ -121,6 +121,8 @@ core_term
     { LetE ($2, $4, $6) }
   | LET MODULE CON EQ core_term IN core_term
     { LetModE ($3, $5, $7) }
+  | IF core_term THEN core_term ELSE core_term
+    { IfE ($2, $4, $6) }
   | ESC core_term %prec UNARY
     { EscE $2 }
   | RUN core_term %prec UNARY

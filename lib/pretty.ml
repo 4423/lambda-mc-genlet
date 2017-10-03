@@ -38,6 +38,8 @@ and pp_core_term: core_term -> string = function
     Printf.sprintf "(fun %s -> %s)" (pp_var x0) (pp_core_term e0)
   | AppE (e0, e1) ->
     Printf.sprintf "(%s %s)" (pp_core_term e0) (pp_core_term e1)
+  | IfE (e0, e1, e2) ->
+    Printf.sprintf "(if %s then %s else %s)" (pp_core_term e0) (pp_core_term e1) (pp_core_term e2)
   | LetE (x0, e0, e1) ->
     Printf.sprintf "let %s = %s in %s" (pp_var x0) (pp_core_term e0) (pp_core_term e1)
   | LetModE (x0, e0, e1) ->

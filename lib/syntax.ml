@@ -27,6 +27,7 @@ type var = string
    | AppE    of core_term * core_term
    | LetE    of var * core_term * core_term
    | LetModE of var * core_term * core_term
+   | IfE     of core_term * core_term * core_term
    | ModE    of mod_term * mod_type
    | CodE    of core_term
    | EscE    of core_term

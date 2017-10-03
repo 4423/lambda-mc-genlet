@@ -67,6 +67,8 @@ and small_term0 = function
     S.FunE (x0, small_term0 e0)
   | S.AppE (e0, e1) ->
     S.AppE (small_term0 e0, small_term0 e1)
+  | S.IfE (e0, e1, e2) ->
+    S.IfE (small_term0 e0, small_term0 e1, small_term0 e2)
   | S.CodE e0 ->
     S.CodE (small_term0 e0)
   | S.RunE e0 ->
@@ -85,6 +87,8 @@ and small_term1 = function
     S.FunE (x0, small_term1 e0)
   | S.AppE (e0, e1) ->
     S.AppE (small_term1 e0, small_term1 e1)
+  | S.IfE (e0, e1, e2) ->
+    S.IfE (small_term1 e0, small_term1 e1, small_term1 e2)
   | S.CodE _ ->
     failwith "[error] ``code`` is not allowed to appear at level-1 term"
   | S.RunE _ ->
@@ -119,6 +123,8 @@ and large_term0 = function
     L.FunE (x0, large_term0 e0)
   | L.AppE (e0, e1) ->
     L.AppE (large_term0 e0, large_term0 e1)
+  | L.IfE (e0, e1, e2) ->
+    L.IfE (large_term0 e0, large_term0 e1, large_term0 e2)
   | L.LetE (x0, e0, e1) ->
     L.LetE (x0, large_term0 e0, large_term0 e1)
   | L.LetModE (x0, e0, e1) ->
@@ -135,6 +141,8 @@ and large_term1 = function
     L.FunE (x0, large_term1 e0)
   | L.AppE (e0, e1) ->
     L.AppE (large_term1 e0, large_term1 e1)
+  | L.IfE (e0, e1, e2) ->
+    L.IfE (large_term1 e0, large_term1 e1, large_term1 e2)
   | L.LetE (x0, e0, e1) ->
     L.LetE (x0, large_term1 e0, large_term1 e1)
   | L.LetModE (x0, e0, e1) ->
