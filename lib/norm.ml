@@ -69,7 +69,7 @@ module Large = struct
     | SmallE  of Small.core_term
     | LetE    of Small.var * Small.var list * Small.var list * core_term * core_term
     | LetRecE of Small.var * Small.var list * Small.var list * core_term * core_term
-    | LetModE of Small.var * core_term * core_term
+    | LetModE of Small.var * Small.mod_term * core_term
     | FunE    of Small.var * core_term
     | FunModE of Small.var * Small.mod_type * core_term
     | AppE    of core_term * core_term
@@ -85,6 +85,8 @@ end
 
 module S = Small
 module L = Large
+
+module Set = Set.Make (String)
 
 let rec lookup_signature name = function
   | S.SignatureDec (name', s0) :: decl_list when name = name' -> Some s0
@@ -151,8 +153,8 @@ and norm_term env = function
       | e0, e1 ->
         L.LetRecE (x0, xs0, ys0, e0, e1)
     end
-  | Syntax.LetModE (x0, e0, e1) ->
-    L.LetModE (x0, norm_term env e0, norm_term env e1)
+  | Syntax.LetModE (x0, m0, e0) ->
+    L.LetModE (x0, norm_structure env m0, norm_term env e0)
   | Syntax.IfE (e0, e1, e2) -> begin
       match norm_term env e0, norm_term env e1, norm_term env e2 with
       | L.SmallE e0', L.SmallE e1', L.SmallE e2' ->
@@ -222,6 +224,9 @@ and norm_structure env = function
       | None ->
         failwith (Printf.sprintf "unbound module structure '%s'" x0)
     end
+  | Syntax.UnpackM _ ->
+    failwith "it is not allow to unpack a module within the module structure"
+
 and norm_structure_component env = function
   | Syntax.TypeM (x0, t0) -> begin
       match norm_type env t0 with
@@ -241,6 +246,8 @@ and norm_structure_component env = function
       | _ ->
         failwith "[error] large term/type can not appear within a module structure"
     end
+  | Syntax.ModM _ ->
+    failwith "[error] module structure can not appear within a module structure"
 
 and norm_signature env = function
   | Syntax.Signature cs0 ->
@@ -258,6 +265,7 @@ and norm_signature env = function
       | None ->
         failwith (Printf.sprintf "unbound module signature '%s'" x0)
     end
+
 and norm_signature_component env = function
   | Syntax.TypeS (x0, Some t0) -> begin
       match norm_type env t0 with
@@ -273,6 +281,8 @@ and norm_signature_component env = function
       | _ ->
         failwith "[error] large-type can not appear within a module signature"
     end
+  | Syntax.ModS _ ->
+    failwith "[error] module signature can not appear within a module signature"
 
 let toplevel_decl_list: Syntax.mod_decl list ref =
   ref []
@@ -319,8 +329,8 @@ and denorm_term = function
     Syntax.LetE (x0, xs0, ys0, denorm_term e0, denorm_term e1)
   | L.LetRecE (x0, xs0, ys0, e0, e1) ->
     Syntax.LetRecE (x0, xs0, ys0, denorm_term e0, denorm_term e1)
-  | L.LetModE (x0, e0, e1) ->
-    Syntax.LetModE (x0, denorm_term e0, denorm_term e1)
+  | L.LetModE (x0, m0, e1) ->
+    Syntax.LetModE (x0, denorm_structure m0, denorm_term e1)
   | L.FunModE (x0, s0, e0) ->
     Syntax.FunModE (x0, denorm_signature s0, denorm_term e0)
   | L.FunE (x0, e0) ->
@@ -333,6 +343,7 @@ and denorm_term = function
     Syntax.CodE (denorm_term e0)
   | L.ModE (m0, s0) ->
     Syntax.ModE (denorm_structure m0, denorm_signature s0)
+
 and denorm_type = function
   | L.SmallT (S.VarT x0) ->
     Syntax.VarT x0
@@ -355,14 +366,22 @@ and denorm_type = function
 
 and denorm_structure = function
   | S.Structure cs0 ->
-    Syntax.Structure (List.map denorm_structure_component cs0)
+    let set = List.fold_right Set.union (List.map dollar_structure_component cs0) Set.empty in
+    let (bindings, cs1) = List.split @@ List.map begin fun var ->
+      let con = Fresh.con () in
+      ((var, con), Syntax.ModM (con, Syntax.UnpackM (Syntax.VarE var)))
+    end (Set.elements set) in
+    Syntax.Structure (cs1 @ List.map begin fun c -> 
+        denorm_structure_component @@ (rename_structure_component bindings c)
+      end cs0)
+
 and denorm_structure_component = function
   | S.TypeM (x0, t0) ->
     Syntax.TypeM (x0, denorm_type (L.SmallT t0))
-  | S.LetM (x0, xs0, ys0, e0) ->
-    Syntax.LetM (x0, xs0, ys0, denorm_term (L.SmallE e0))
   | S.LetRecM (x0, xs0, ys0, e0) ->
     Syntax.LetRecM (x0, xs0, ys0, denorm_term (L.SmallE e0))
+  | S.LetM (x0, xs0, ys0, e0) ->
+    Syntax.LetM (x0, xs0, ys0, denorm_term (L.SmallE e0))
 
 and denorm_signature = function
   | S.Signature cs0 ->
@@ -380,3 +399,79 @@ and denorm_signature_component = function
     Syntax.TypeS (x0, None)
   | S.ValS (x0, t0) ->
     Syntax.ValS (x0, denorm_type (L.SmallT t0))
+
+and dollar_structure_component = function
+  | S.TypeM (_, t0) ->
+    dollar_core_type t0
+  | S.LetRecM (_, _, _, e0) ->
+    dollar_core_term e0
+  | S.LetM (_, _, _, e0) ->
+    dollar_core_term e0
+
+and dollar_core_term = function
+  | S.AccE (S.DollarP x0, _) ->
+    Set.singleton x0
+  | S.IfE (e0, e1, e2) ->
+    Set.union (dollar_core_term e0) (Set.union (dollar_core_term e1) (dollar_core_term e2))
+  | S.LetE (_, _, _, e0, e1) | S.LetRecE (_, _, _, e0, e1) | S.AppE (e0, e1) ->
+    Set.union (dollar_core_term e0) (dollar_core_term e1)
+  | S.FunE (_, e0) | S.CodE e0 | S.EscE e0 | S.RunE e0 ->
+    dollar_core_term e0
+  | _ ->
+    Set.empty
+
+and dollar_core_type = function
+  | S.AccT (S.DollarP x0, _) ->
+    Set.singleton x0
+  | S.ArrT (t0, t1) ->
+    Set.union (dollar_core_type t0) (dollar_core_type t1)
+  | S.CodT t0 | S.EscT t0 ->
+    dollar_core_type t0
+  | _ ->
+    Set.empty
+ 
+and rename_structure_component env = function
+  | S.TypeM (x0, t0) ->
+    S.TypeM (x0, rename_core_type env t0)
+  | S.LetRecM (x0, xs0, ys0, e0) ->
+    S.LetRecM (x0, xs0, ys0, rename_core_term env e0)
+  | S.LetM (x0, xs0, ys0, e0) ->
+    S.LetM (x0, xs0, ys0, rename_core_term env e0)
+
+and rename_core_term env = function
+  | S.VarE x0 ->
+    S.VarE x0
+  | S.AccE (S.VarP x0, x1) ->
+    S.AccE (S.VarP x0, x1)
+  | S.AccE (S.DollarP x0, x1) ->
+    S.AccE (S.VarP (List.assoc x0 env), x1)
+  | S.IfE (e0, e1, e2) ->
+    S.IfE (rename_core_term env e0, rename_core_term env e1, rename_core_term env e1)
+  | S.LetRecE (x0, xs0, ys0, e0, e1) ->
+    S.LetRecE (x0, xs0, ys0, rename_core_term env e0, rename_core_term env e1)
+  | S.LetE (x0, xs0, ys0, e0, e1) ->
+    S.LetE (x0, xs0, ys0, rename_core_term env e0, rename_core_term env e1)
+  | S.AppE (e0, e1) ->
+    S.AppE (rename_core_term env e0, rename_core_term env e1)
+  | S.FunE (x0, e0) ->
+    S.FunE (x0, rename_core_term env e0)
+  | S.CodE e0 ->
+    S.CodE (rename_core_term env e0)
+  | S.EscE e0 ->
+    S.EscE (rename_core_term env e0)
+  | S.RunE e0 ->
+    S.RunE (rename_core_term env e0)
+
+and rename_core_type env = function
+  | S.VarT x0 ->
+    S.VarT x0
+  | S.AccT (S.VarP x0, x1) ->
+    S.AccT (S.VarP x0, x1)
+  | S.AccT (S.DollarP x0, x1) ->
+    S.AccT (S.VarP (List.assoc x0 env), x1)
+  | S.ArrT (t0, t1) ->
+    S.ArrT (rename_core_type env t0, rename_core_type env t1)
+  | S.CodT t0 ->
+    S.CodT (rename_core_type env t0)
+  | S.EscT t0 ->
+    S.EscT (rename_core_type env t0)

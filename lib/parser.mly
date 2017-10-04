@@ -143,7 +143,7 @@ core_term
     { LetE ($2, List.rev $3, List.rev $4, $6, $8) }
   | LET REC VAR type_parameter_list parameter_list EQ core_term IN core_term
     { LetRecE ($3, List.rev $4, List.rev $5, $7, $9) }
-  | LET MODULE CON EQ core_term IN core_term
+  | LET MODULE CON EQ mod_term IN core_term
     { LetModE ($3, $5, $7) }
   | IF core_term THEN core_term ELSE core_term
     { IfE ($2, $4, $6) }
@@ -182,6 +182,8 @@ mod_term
     { Structure (List.rev $2) }
   | CON
     { VarM $1 }
+  | LPAREN VAL core_term RPAREN
+    { UnpackM $3 }
   ;
 
 structure
@@ -198,6 +200,8 @@ structure_component
     { LetRecM ($3, List.rev $4, List.rev $5, $7) }
   | LET VAR type_parameter_list parameter_list EQ core_term
     { LetM ($2, List.rev $3, List.rev $4, $6) }
+  | MODULE CON EQ mod_term
+    { ModM ($2, $4) }
   ;
 
 mod_type
@@ -223,12 +227,14 @@ signature_component
     { TypeS ($2, None) }
   | VAL VAR COL core_type
     { ValS ($2, $4) }
+  | MODULE CON COL mod_type
+    { ModS ($2, $4) }
   ;
 
 path
   : CON
     { VarP $1 }
-  | DOLLAR CON
+  | DOLLAR VAR
     { DollarP $2 }
   ;
 

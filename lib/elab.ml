@@ -149,8 +149,8 @@ and large_term0 = function
     L.LetE (x0, xs0, ys0, large_term0 e0, large_term0 e1)
   | L.LetRecE (x0, xs0, ys0, e0, e1) ->
     L.LetRecE (x0, xs0, ys0, large_term0 e0, large_term0 e1)
-  | L.LetModE (x0, e0, e1) ->
-    L.LetModE (x0, large_term0 e0, large_term0 e1)
+  | L.LetModE (x0, m0, e0) ->
+    L.LetModE (x0, structure0 m0, large_term0 e0)
   | L.ModE (m0, s0) ->
     L.ModE (structure0 m0, signature0 s0)
   | L.CodE e0 ->
@@ -171,8 +171,8 @@ and large_term1 = function
     L.LetE (x0, xs0, ys0, large_term1 e0, large_term1 e1)
   | L.LetRecE (x0, xs0, ys0, e0, e1) ->
     L.LetRecE (x0, xs0, ys0, large_term1 e0, large_term1 e1)
-  | L.LetModE (x0, e0, e1) ->
-    L.LetModE (x0, large_term1 e0, large_term1 e1)
+  | L.LetModE (x0, m0, e0) ->
+    L.LetModE (x0, structure1 m0, large_term1 e0)
   | L.ModE (m0, s0) ->
     L.ModE (structure1 m0, signature1 s0)
   | L.CodE _ ->

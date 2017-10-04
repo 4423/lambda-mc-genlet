@@ -31,7 +31,7 @@ type var = string
    | AppE    of core_term * core_term
    | LetE    of var * var list * var list * core_term * core_term
    | LetRecE of var * var list * var list * core_term * core_term
-   | LetModE of var * core_term * core_term
+   | LetModE of var * mod_term * core_term
    | IfE     of core_term * core_term * core_term
    | ModE    of mod_term * mod_type
    | CodE    of core_term
@@ -50,18 +50,23 @@ type var = string
    | StructureDec of var * mod_term
    | SignatureDec of var * mod_type
 
- and mod_term  = Structure of structure | VarM of var
+ and mod_term  =
+   | Structure of structure
+   | VarM of var
+   | UnpackM of core_term
  and structure = structure_component list
  and structure_component =
    | TypeM   of var * core_type
-   | LetM    of var * var list * var list * core_term
    | LetRecM of var * var list * var list * core_term
+   | LetM    of var * var list * var list * core_term
+   | ModM    of var * mod_term
 
  and mod_type  = Signature of signature | VarS of var | Sharing of mod_type * var * core_type
  and signature = signature_component list
  and signature_component =
    | TypeS  of var * core_type option
    | ValS   of var * core_type
+   | ModS   of var * mod_type
 
  and path =
    | VarP of string

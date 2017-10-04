@@ -85,11 +85,11 @@ and pp_core_term: core_term -> string = function
       (String.concat " " @@ ys0)
       (pp_core_term e0)
       (pp_core_term e1)
-  | LetModE (x0, e0, e1) ->
+  | LetModE (x0, m0, e0) ->
     Printf.sprintf "let module %s = %s in %s"
       (pp_var x0)
+      (pp_mod_term m0)
       (pp_core_term e0)
-      (pp_core_term e1)
   | ModE (m0, s0) ->
     Printf.sprintf "(module %s : %s)"
       (pp_mod_term m0)
@@ -142,8 +142,12 @@ and pp_mod_term: mod_term -> string = function
   | Structure (cs0) ->
     Printf.sprintf "struct %s end"
       (pp_structure cs0)
+  | UnpackM e0 ->
+    Printf.sprintf "(val %s)"
+      (pp_core_term e0)
   | VarM x0 ->
     (pp_var x0)
+
 and pp_structure: structure -> string =
   fun cs0 -> String.concat " " @@ List.map pp_structure_component cs0
 and pp_structure_component: structure_component -> string = function
@@ -163,6 +167,10 @@ and pp_structure_component: structure_component -> string = function
       (String.concat " " @@ List.map (Printf.sprintf "(type %s)") xs0)
       (String.concat " " @@ ys0)
       (pp_core_term e0)
+  | ModM (x0, m0) ->
+    Printf.sprintf "module %s = %s"
+      (pp_var x0)
+      (pp_mod_term m0)
 
 and pp_mod_type: mod_type -> string = function
   | Signature (cs0) ->
@@ -190,6 +198,10 @@ and pp_signature_component: signature_component -> string = function
     Printf.sprintf "val %s : %s"
       (pp_var x0)
       (pp_core_type t0)
+  | ModS (x0, s0) ->
+    Printf.sprintf "module %s : %s"
+      (pp_var x0)
+      (pp_mod_type s0)
 
 and pp_path: path -> string = function
   | VarP x0 ->
