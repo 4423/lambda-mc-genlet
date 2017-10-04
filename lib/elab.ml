@@ -122,7 +122,7 @@ and large_type0 = function
   | L.ModT s0 ->
     L.ModT (signature0 s0)
   | L.ModCodT s0 ->
-    L.ModT (signature0 s0)
+    L.ModT (signature1 s0)
 
 and large_type1 = function
   | L.SmallT t0 ->
@@ -137,8 +137,8 @@ and large_type1 = function
 and large_term0 = function
   | L.SmallE e0' ->
     L.SmallE (small_term0 e0')
-  | L.FunE (x0, e0) ->
-    L.FunE (x0, large_term0 e0)
+  | L.FunE (x0, t0, e0) ->
+    L.FunE (x0, large_type0 t0, large_term0 e0)
   | L.FunModE (x0, s0, e0) ->
     L.FunModE (x0, signature0 s0, large_term0 e0)
   | L.AppE (e0, e1) ->
@@ -159,8 +159,8 @@ and large_term0 = function
 and large_term1 = function
   | L.SmallE e0' ->
     L.SmallE (small_term1 e0')
-  | L.FunE (x0, e0) ->
-    L.FunE (x0, large_term1 e0)
+  | L.FunE (x0, t0, e0) ->
+    L.FunE (x0, large_type1 t0, large_term1 e0)
   | L.FunModE (x0, s0, e0) ->
     L.FunModE (x0, signature1 s0, large_term1 e0)
   | L.AppE (e0, e1) ->

@@ -58,9 +58,14 @@ and pp_core_term: core_term -> string = function
       (pp_var x0)
       (pp_mod_type s0)
       (pp_core_term e0)
-  | FunE (x0, e0) ->
+  | FunE (x0, None, e0) ->
     Printf.sprintf "(fun %s -> %s)"
       (pp_var x0)
+      (pp_core_term e0)
+  | FunE (x0, Some t0, e0) ->
+    Printf.sprintf "(fun (%s: %s) -> %s)"
+      (pp_var x0)
+      (pp_core_type t0)
       (pp_core_term e0)
   | AppE (e0, e1) ->
     Printf.sprintf "(%s %s)"

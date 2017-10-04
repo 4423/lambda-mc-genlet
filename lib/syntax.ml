@@ -26,7 +26,7 @@ type var = string
  and core_term =
    | VarE    of var
    | AccE    of path * var
-   | FunE    of var * core_term
+   | FunE    of var * core_type option * core_term
    | FunModE of var * mod_type * core_term
    | AppE    of core_term * core_term
    | LetE    of var * var list * var list * core_term * core_term

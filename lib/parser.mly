@@ -84,7 +84,7 @@ open Syntax
 %left ADD SUB
 %left MUL DIV
 %nonassoc UNARY
-%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN
+%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN ESC RUN LCOD CODE
 
 %type <Syntax.mod_decl list * Syntax.toplevel list> main
 %type <Syntax.core_term> core_term
@@ -138,7 +138,9 @@ core_term
   | FUN LPAREN MODULE CON COL mod_type RPAREN SINGLE_ARROW core_term
     { FunModE ($4, $6, $9) }
   | FUN VAR SINGLE_ARROW core_term
-    { FunE ($2, $4) }  
+    { FunE ($2, None, $4) }  
+  | FUN LPAREN VAR COL core_type RPAREN SINGLE_ARROW core_term
+    { FunE ($3, Some $5, $8) }
   | LET VAR type_parameter_list parameter_list EQ core_term IN core_term
     { LetE ($2, List.rev $3, List.rev $4, $6, $8) }
   | LET REC VAR type_parameter_list parameter_list EQ core_term IN core_term
@@ -147,10 +149,6 @@ core_term
     { LetModE ($3, $5, $7) }
   | IF core_term THEN core_term ELSE core_term
     { IfE ($2, $4, $6) }
-  | ESC core_term %prec UNARY
-    { EscE $2 }
-  | RUN core_term %prec UNARY
-    { RunE $2 }
   ;
 
 simple_term
@@ -160,6 +158,10 @@ simple_term
     { ModE ($3, $5) }
   | LCOD core_term RCOD
     { CodE $2 }
+  | ESC core_term %prec UNARY 
+    { EscE $2 }
+  | RUN core_term %prec UNARY 
+    { RunE $2 }
   | VAR
     { VarE $1 }
   ;

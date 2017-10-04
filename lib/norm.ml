@@ -70,7 +70,7 @@ module Large = struct
     | LetE    of Small.var * Small.var list * Small.var list * core_term * core_term
     | LetRecE of Small.var * Small.var list * Small.var list * core_term * core_term
     | LetModE of Small.var * Small.mod_term * core_term
-    | FunE    of Small.var * core_term
+    | FunE    of Small.var * core_type * core_term
     | FunModE of Small.var * Small.mod_type * core_term
     | AppE    of core_term * core_term
     | IfE     of core_term * core_term * core_term
@@ -123,12 +123,19 @@ and norm_term env = function
     L.SmallE (S.AccE (S.VarP x0, x1))
   | Syntax.AccE (Syntax.DollarP x0, x1) ->
     L.SmallE (S.AccE (S.DollarP x0, x1))
-  | Syntax.FunE (x0, e0) -> begin
+  | Syntax.FunE (x0, Some t0, e0) -> begin
+      match norm_type env t0, norm_term env e0 with
+      | L.SmallT _, L.SmallE e0' ->
+        L.SmallE (S.FunE (x0, e0'))
+      | t0, e0 ->
+        L.FunE (x0, t0, e0)
+    end
+  | Syntax.FunE (x0, None, e0) -> begin
       match norm_term env e0 with
       | L.SmallE e0' ->
         L.SmallE (S.FunE (x0, e0'))
-      | e0 ->
-        L.FunE (x0, e0)
+      | _ ->
+        failwith "[error] large-term must be explicitly typed"
     end
   | Syntax.FunModE (x0, s0, e0) ->
     L.FunModE (x0, norm_signature env s0, norm_term env e0)
@@ -314,7 +321,7 @@ and denorm_term = function
   | L.SmallE (S.LetRecE (x0, xs0, ys0, e0, e1)) ->
     Syntax.LetRecE (x0, xs0, ys0, denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
   | L.SmallE (S.FunE (x0, e0)) ->
-    Syntax.FunE (x0, denorm_term (L.SmallE e0))
+    Syntax.FunE (x0, None, denorm_term (L.SmallE e0))
   | L.SmallE (S.AppE (e0, e1)) ->
     Syntax.AppE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
   | L.SmallE (S.IfE (e0, e1, e2)) ->
@@ -333,8 +340,8 @@ and denorm_term = function
     Syntax.LetModE (x0, denorm_structure m0, denorm_term e1)
   | L.FunModE (x0, s0, e0) ->
     Syntax.FunModE (x0, denorm_signature s0, denorm_term e0)
-  | L.FunE (x0, e0) ->
-    Syntax.FunE (x0, denorm_term e0)
+  | L.FunE (x0, t0,  e0) ->
+    Syntax.FunE (x0, Some (denorm_type t0), denorm_term e0)
   | L.AppE (e0, e1) ->
     Syntax.AppE (denorm_term e0, denorm_term e1)
   | L.IfE (e0, e1, e2) ->
