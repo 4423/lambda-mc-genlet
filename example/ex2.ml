@@ -3,9 +3,9 @@ module type S = sig
   val fst: t -> t -> t
   val snd: t -> t -> t
 end
-let f (type a) = fun (module X : S with type t = a) -> .<(module struct
-  type t = X.t
-  let fst = fun x -> fun y -> X.fst x y
-  let snd = fun x -> fun y -> X.snd x y
+let f (type a) = fun (m : (module S with type t = a) code) -> .<(module struct
+  type t = $m.t
+  let fst = fun x -> fun y -> .~($m.fst) x y
+  let snd = fun x -> fun y -> .~($m.snd) x y
 end : S with type t = a)>.
 ;;

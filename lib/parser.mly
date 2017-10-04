@@ -84,7 +84,7 @@ open Syntax
 %left ADD SUB
 %left MUL DIV
 %nonassoc UNARY
-%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN ESC RUN LCOD CODE
+%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN ESC RUN LCOD CODE DOLLAR CON
 
 %type <Syntax.mod_decl list * Syntax.toplevel list> main
 %type <Syntax.core_term> core_term
@@ -133,8 +133,6 @@ core_term
     { $1 }
   | core_term simple_term
     { AppE ($1, $2) }
-  | path DOT VAR
-    { AccE ($1, $3) }
   | FUN LPAREN MODULE CON COL mod_type RPAREN SINGLE_ARROW core_term
     { FunModE ($4, $6, $9) }
   | FUN VAR SINGLE_ARROW core_term
@@ -158,10 +156,12 @@ simple_term
     { ModE ($3, $5) }
   | LCOD core_term RCOD
     { CodE $2 }
-  | ESC core_term %prec UNARY 
+  | ESC simple_term
     { EscE $2 }
-  | RUN core_term %prec UNARY 
+  | RUN simple_term
     { RunE $2 }
+  | path DOT VAR
+    { AccE ($1, $3) }
   | VAR
     { VarE $1 }
   ;
