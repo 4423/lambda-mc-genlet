@@ -79,11 +79,9 @@ rule token = parse
     { DOUBLE_ARROW }
 | ","
     { COMMA }
-| "|"
-    { BAR }
 | ":"
     { COL }
-| ":"
+| "::"
     { COL_COL }
 | "."
     { DOT }
@@ -95,6 +93,8 @@ rule token = parse
     { UNIT }
 | "&&"
     { CONJ }
+| "|"
+    { BAR }
 | "||"
     { DISJ }
 | "true"
@@ -129,6 +129,10 @@ rule token = parse
     { VAL }
 | "type"
     { TYPE }
+| "and"
+    { AND }
+| "match"
+    { MATCH }
 | "with"
     { WITH }
 | "code"

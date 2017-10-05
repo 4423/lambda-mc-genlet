@@ -152,12 +152,32 @@ and pp_core_term: core_term -> string = function
     Printf.sprintf "(%s <= %s)"
       (pp_core_term e0)
       (pp_core_term e1)
+  | DisjE (e0, e1) ->
+    Printf.sprintf "(%s || %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | ConjE (e0, e1) ->
+    Printf.sprintf "(%s && %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | ConsE (e0, e1) ->
+    Printf.sprintf "(%s :: %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
   | NotE e0 ->
     Printf.sprintf "(not %s)"
       (pp_core_term e0)
   | NegE e0 ->
     Printf.sprintf "(-%s)"
       (pp_core_term e0)
+  | MatchE (e0, cs0) ->
+    Printf.sprintf "match %s with\n%s\n"
+      (pp_core_term e0)
+      (String.concat "\n" @@ List.map (fun (pattern, body) ->
+          Printf.sprintf "| %s -> %s"
+            (pp_pattern pattern)
+            (pp_core_term body)) cs0)
+
 
 and pp_core_type: core_type -> string = function
   | VarT (x0) ->
@@ -177,6 +197,10 @@ and pp_core_type: core_type -> string = function
       (pp_mod_type s0)
   | ArrT (t0, t1) ->
     Printf.sprintf "(%s -> %s)"
+      (pp_core_type t0)
+      (pp_core_type t1)
+  | AppT (t0, t1) ->
+    Printf.sprintf "(%s %s)"
       (pp_core_type t0)
       (pp_core_type t1)
 
@@ -233,6 +257,11 @@ and pp_mod_type: mod_type -> string = function
       (pp_signature cs0)
   | VarS x0 ->
     (pp_var x0)
+  | Sharing (Sharing _ as s0, x0, t0) ->
+    Printf.sprintf "%s and type %s = %s"
+      (pp_mod_type s0)
+      (pp_var x0)
+      (pp_core_type t0)
   | Sharing (s0, x0, t0) ->
     Printf.sprintf "%s with type %s = %s"
       (pp_mod_type s0)
@@ -263,3 +292,13 @@ and pp_path: path -> string = function
     (pp_var x0)
   | DollarP x0 ->
     "$" ^ (pp_var x0)
+
+and pp_pattern: pattern -> string = function
+  | VarPat x0 -> 
+    (pp_var x0)
+  | ConsPat (pat0, pat1) ->
+    Printf.sprintf "%s :: %s"
+      (pp_pattern pat0)
+      (pp_pattern pat1)
+  | WildPat ->
+    "_"

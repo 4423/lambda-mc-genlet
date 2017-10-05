@@ -48,6 +48,8 @@ and small_type0 = function
     S.AccT (S.DollarP x0, x1)
   | S.ArrT (t0, t1) ->
     S.ArrT (small_type0 t0, small_type0 t1)
+  | S.AppT (t0, t1) ->
+    S.AppT (small_type0 t0, small_type0 t1)
   | S.CodT t0 ->
     S.CodT (small_type0 t0)
   | S.EscT _ ->
@@ -61,6 +63,8 @@ and small_type1 = function
     S.AccT (S.DollarP x0, x1)
   | S.ArrT (t0, t1) ->
     S.ArrT (small_type1 t0, small_type1 t1)
+  | S.AppT (t0, t1) ->
+    S.AppT (small_type1 t0, small_type1 t1)
   | S.CodT _ ->
     failwith "[error] ``code`` is not allowed to appear at level-1 type"
   | S.EscT t0 ->
@@ -117,11 +121,15 @@ and small_term0 = function
     S.ConjE (small_term0 e0, small_term0 e1)
   | S.DisjE (e0, e1) ->
     S.DisjE (small_term0 e0, small_term0 e1)
+  | S.ConsE (e0, e1) ->
+    S.ConsE (small_term0 e0, small_term0 e1)
   | S.NotE e0 ->
     S.NotE (small_term0 e0)
   | S.NegE e0 ->
     S.NegE (small_term0 e0)
-
+  | S.MatchE (e0, cs0) ->
+    S.MatchE (small_term0 e0,
+      List.map (fun (pattern, body) -> (pattern, small_term0 body)) cs0)
 
 and small_term1 = function
   | S.VarE x0 ->
@@ -174,17 +182,23 @@ and small_term1 = function
     S.ConjE (small_term1 e0, small_term1 e1)
   | S.DisjE (e0, e1) ->
     S.DisjE (small_term1 e0, small_term1 e1)
+  | S.ConsE (e0, e1) ->
+    S.ConsE (small_term1 e0, small_term1 e1)
   | S.NotE e0 ->
     S.NotE (small_term1 e0)
   | S.NegE e0 ->
     S.NegE (small_term1 e0)
-
+  | S.MatchE (e0, cs0) ->
+    S.MatchE (small_term1 e0,
+      List.map (fun (pattern, body) -> (pattern, small_term1 body)) cs0)
 
 and large_type0 = function
   | L.SmallT t0 ->
     L.SmallT (small_type0 t0)
   | L.ArrT (t0, t1) ->
     L.ArrT (large_type0 t0, large_type0 t1)
+  | L.AppT (t0, t1) ->
+    L.AppT (large_type0 t0, large_type0 t1)
   | L.ModT s0 ->
     L.ModT (signature0 s0)
   | L.ModCodT s0 ->
@@ -195,6 +209,8 @@ and large_type1 = function
     L.SmallT (small_type1 t0)
   | L.ArrT (t0, t1) ->
     L.ArrT (large_type1 t0, large_type1 t1)
+  | L.AppT (t0, t1) ->
+    L.AppT (large_type1 t0, large_type1 t1)
   | L.ModT s0 ->
     L.ModT (signature1 s0)
   | L.ModCodT _ ->
@@ -273,6 +289,9 @@ and signature_component1 = function
 and structure0 = function
   | S.Structure cs0 ->
     S.Structure (List.fold_right structure_component0 cs0 [])
+  | S.UnpackM e0 ->
+    S.UnpackM (small_term0 e0)
+
 and structure_component0 e cs =
   match e with
   | S.TypeM (x0, t0) ->
@@ -286,6 +305,8 @@ and structure1 = function
   | S.Structure cs0 -> 
     let (_, cs0) = List.fold_left structure_component1 (identity, []) cs0 in
     S.Structure (List.rev cs0)
+  | S.UnpackM e0 ->
+    S.UnpackM (small_term1 e0)
 
 and structure_component1 (f, cs) = function
   | S.TypeM (x0, t0) ->

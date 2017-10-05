@@ -57,6 +57,8 @@ open Syntax
 %token TRUE              // "true"
 %token FALSE             // "false"
 %token NOT               // "not"
+%token AND               // "and"
+%token MATCH             // "match"
 %token FUN               // "fun"
 %token LET               // "let"
 %token REC               // "rec"
@@ -77,9 +79,10 @@ open Syntax
 %token ESC               // ".~"
 %token RUN               // "Runcode.run"
 %token EOF
-%nonassoc BAR
 %nonassoc IN ELSE
-%left WITH
+%nonassoc WITH
+%nonassoc ARROW
+%left BAR AND
 %right SINGLE_ARROW DOUBLE_ARROW
 %left DISJ
 %left CONJ
@@ -118,16 +121,23 @@ toplevel
   ;
 
 core_type
+  : simple_type
+    { $1 }
+  | core_type simple_type
+    { AppT ($1, $2) }
+  | core_type SINGLE_ARROW core_type
+    { ArrT ($1, $3) }
+  ;
+
+simple_type
   : LPAREN core_type RPAREN
     { $2 }
   | LPAREN MODULE mod_type RPAREN
     { ModT $3 }
-  | core_type SINGLE_ARROW core_type
-    { ArrT ($1, $3) }
-  | core_type CODE
-    { CodT $1 }
   | path DOT VAR
     { AccT ($1, $3) }
+  | simple_type CODE
+    { CodT $1 }
   | VAR
     { VarT $1 }
   ;
@@ -175,10 +185,14 @@ core_term
     { Syntax.ConjE ($1, $3) }
   | core_term DISJ core_term
     { Syntax.DisjE ($1, $3) }
+  | core_term COL_COL core_term
+    { Syntax.ConsE ($1, $3) }
   | NOT core_term
     { Syntax.NotE ($2) }
   | SUB core_term %prec UNARY
     { Syntax.NegE ($2) }
+  | MATCH core_term WITH match_clause_list
+    { MatchE ($2, $4) }
   ;
 
 simple_term
@@ -203,6 +217,32 @@ simple_term
   | FALSE
     { BoolE false }
   ;
+
+match_clause_list
+  : match_clause_list BAR match_clause_list
+    { $1 @ $3 }
+  | match_clause
+    { $1 :: [] }
+
+match_clause
+  : pattern SINGLE_ARROW core_term
+    { $1, $3 }
+  ;
+
+pattern
+  : pattern COL_COL pattern
+    { ConsPat ($1, $3) }
+  | simple_pattern
+    { $1 }
+  ;
+
+simple_pattern:
+  | LPAREN pattern RPAREN
+    { $2 }
+  | VAR
+    { match $1 with
+      | "_" -> WildPat
+      | x0  -> VarPat x0 }
 
 mod_decl_list
   : mod_decl_list mod_decl
@@ -248,10 +288,16 @@ mod_type
   : SIGNATURE signature END
     { Signature (List.rev $2) }
   | CON
-    { VarS $1 } 
-  | mod_type WITH TYPE VAR EQ core_type
-    { Sharing ($1, $4, $6) }
+    { VarS $1 }
+  | mod_type WITH sharing_constraint
+    { $3 @@ $1 }
   ;
+
+sharing_constraint
+  : sharing_constraint AND sharing_constraint
+    { fun m0 -> $3 @@ $1 m0 }
+  | TYPE VAR EQ core_type
+    { fun m0 -> Sharing (m0, $2, $4) }
 
 signature
   : signature signature_component

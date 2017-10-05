@@ -47,6 +47,8 @@ type var = string
    | LeEqE   of core_term * core_term
    | ConjE   of core_term * core_term
    | DisjE   of core_term * core_term
+   | ConsE   of core_term * core_term
+   | MatchE  of core_term * (pattern * core_term) list
    | NotE    of core_term
    | NegE    of core_term
    | ModE    of mod_term * mod_type
@@ -58,6 +60,7 @@ type var = string
    | VarT of var
    | AccT of path * var
    | ArrT of core_type * core_type
+   | AppT of core_type * core_type
    | CodT of core_type
    | EscT of core_type
    | ModT of mod_type
@@ -67,15 +70,15 @@ type var = string
    | SignatureDec of var * mod_type
 
  and mod_term  =
-   | Structure of structure
-   | VarM of var
-   | UnpackM of core_term
+   | Structure    of structure
+   | VarM         of var
+   | UnpackM      of core_term
  and structure = structure_component list
  and structure_component =
-   | TypeM   of var * core_type
-   | LetRecM of var * var list * var list * core_term
-   | LetM    of var * var list * var list * core_term
-   | ModM    of var * mod_term
+   | TypeM        of var * core_type
+   | LetRecM      of var * var list * var list * core_term
+   | LetM         of var * var list * var list * core_term
+   | ModM         of var * mod_term
 
  and mod_type  = Signature of signature | VarS of var | Sharing of mod_type * var * core_type
  and signature = signature_component list
@@ -87,3 +90,8 @@ type var = string
  and path =
    | VarP of string
    | DollarP of string
+
+ and pattern =
+   | VarPat  of var
+   | ConsPat of pattern * pattern
+   | WildPat
