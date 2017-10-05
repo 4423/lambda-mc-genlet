@@ -49,6 +49,7 @@ module Small = struct
     | ConsE   of core_term * core_term
     | NotE    of core_term
     | NegE    of core_term
+    | PairE   of core_term * core_term
     | MatchE  of core_term * (pattern * core_term) list
 
   and core_type =
@@ -58,6 +59,7 @@ module Small = struct
     | ArrT    of core_type * core_type
     | CodT    of core_type
     | EscT    of core_type
+    | PairT   of core_type * core_type
 
   and mod_decl =
     | StructureDec of var * mod_term
@@ -83,6 +85,7 @@ module Small = struct
   and pattern =
     | VarPat  of var
     | ConsPat of pattern * pattern
+    | PairPat of pattern * pattern
     | WildPat
 end
 
@@ -105,6 +108,7 @@ module Large = struct
     | SmallT  of Small.core_type
     | ArrT    of core_type * core_type
     | AppT    of core_type * core_type
+    | PairT   of core_type * core_type
     | ModT    of Small.mod_type 
     | ModCodT of Small.mod_type
 end
@@ -261,6 +265,8 @@ and norm_term env = function
     norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.ConjE (e0, e1))
   | Syntax.ConsE (e0, e1) ->
     norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.ConsE (e0, e1))
+  | Syntax.PairE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.PairE (e0, e1))
   | Syntax.MatchE (e0, cs0) -> begin
       match norm_term env e0 with
       | L.SmallE e0' ->
@@ -293,7 +299,7 @@ and norm_type env = function
       | L.SmallT t0', L.SmallT t1' ->
         L.SmallT (S.ArrT (t0', t1'))
       | t0, t1 ->
-        L.ArrT (t0, t1)
+        L.PairT (t0, t1)
     end
   | Syntax.AppT (t0, t1) -> begin
       match norm_type env t0, norm_type env t1 with
@@ -301,7 +307,14 @@ and norm_type env = function
         L.SmallT (S.AppT (t0', t1'))
       | t0, t1 ->
         L.AppT (t0, t1)
-    end      
+    end
+  | Syntax.PairT (t0, t1) -> begin
+      match norm_type env t0, norm_type env t1 with
+      | L.SmallT t0', L.SmallT t1' ->
+        L.SmallT (S.PairT (t0', t1'))
+      | t0, t1 ->
+        L.PairT (t0, t1)
+    end
   | Syntax.CodT t0 -> begin
       match norm_type env t0 with
       | L.SmallT t0' -> L.SmallT (S.CodT t0')
@@ -397,6 +410,8 @@ and norm_pattern env = function
     S.VarPat x0
   | Syntax.ConsPat (pat0, pat1) ->
     S.ConsPat (norm_pattern env pat0, norm_pattern env pat1)
+  | Syntax.PairPat (pat0, pat1) ->
+    S.PairPat (norm_pattern env pat0, norm_pattern env pat1)
   | Syntax.WildPat ->
     S.WildPat
 
@@ -471,6 +486,8 @@ and denorm_term = function
     Syntax.DisjE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
   | L.SmallE (S.ConsE (e0, e1)) ->
     Syntax.ConsE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.PairE (e0, e1)) ->
+    Syntax.PairE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
   | L.SmallE (S.NotE e0) ->
     Syntax.NotE (denorm_term (L.SmallE e0))
   | L.SmallE (S.NegE e0) ->
@@ -508,6 +525,8 @@ and denorm_type = function
     Syntax.ArrT (denorm_type (L.SmallT t0), denorm_type (L.SmallT t1))
   | L.SmallT (S.AppT (t0, t1)) ->
     Syntax.AppT (denorm_type (L.SmallT t0), denorm_type (L.SmallT t1))
+  | L.SmallT (S.PairT (t0, t1)) ->
+    Syntax.PairT (denorm_type (L.SmallT t0), denorm_type (L.SmallT t1))
   | L.SmallT (S.CodT t0) ->
     Syntax.CodT (denorm_type (L.SmallT t0))
   | L.SmallT (S.EscT t0) ->
@@ -516,6 +535,8 @@ and denorm_type = function
     Syntax.ArrT (denorm_type t0, denorm_type t1)
   | L.AppT (t0, t1) ->
     Syntax.AppT (denorm_type t0, denorm_type t1)
+  | L.PairT (t0, t1) ->
+    Syntax.PairT (denorm_type t0, denorm_type t1)
   | L.ModT s0 ->
     Syntax.ModT (denorm_signature s0)
   | L.ModCodT s0 ->
@@ -564,8 +585,11 @@ and denorm_pattern = function
     Syntax.VarPat x0
   | S.ConsPat (pat0, pat1) ->
     Syntax.ConsPat (denorm_pattern pat0, denorm_pattern pat1)
+  | S.PairPat (pat0, pat1) ->
+    Syntax.PairPat (denorm_pattern pat0, denorm_pattern pat1)
   | S.WildPat ->
     Syntax.WildPat
+
 
 and dollar_structure_component = function
   | S.TypeM (_, t0) ->
@@ -583,7 +607,7 @@ and dollar_core_term = function
   | S.LetE (_, _, _, e0, e1) | S.LetRecE (_, _, _, e0, e1) | S.AppE (e0, e1)
   | S.AddE (e0, e1) | S.SubE (e0, e1) | S.MulE (e0, e1) | S.DivE (e0, e1)
   | S.EqE (e0, e1)  | S.NeE (e0, e1)  | S.GtE (e0, e1)  | S.LeE (e0, e1) | S.GtEqE (e0, e1) | S.LeEqE (e0, e1)
-  | S.ConjE (e0, e1) | S.DisjE (e0, e1) | S.ConsE (e0, e1) ->
+  | S.ConjE (e0, e1) | S.DisjE (e0, e1) | S.ConsE (e0, e1) | S.PairE (e0, e1) ->
     Set.union (dollar_core_term e0) (dollar_core_term e1)
   | S.FunE (_, e0) | S.CodE e0 | S.EscE e0 | S.RunE e0 | S.NotE e0 | S.NegE e0 ->
     dollar_core_term e0
@@ -595,7 +619,7 @@ and dollar_core_term = function
 and dollar_core_type = function
   | S.AccT (S.DollarP x0, _) ->
     Set.singleton x0
-  | S.ArrT (t0, t1) ->
+  | S.ArrT (t0, t1) | S.PairT (t0, t1) ->
     Set.union (dollar_core_type t0) (dollar_core_type t1)
   | S.CodT t0 | S.EscT t0 ->
     dollar_core_type t0
@@ -670,6 +694,8 @@ and rename_core_term env = function
   | S.MatchE (e0, cs0) ->
     S.MatchE (rename_core_term env e0, 
       List.map (fun (pattern, body) -> (pattern, rename_core_term env body)) cs0)
+  | S.PairE (e0, e1) ->
+    S.PairE (rename_core_term env e0, rename_core_term env e1)
 
 and rename_core_type env = function
   | S.VarT x0 ->
@@ -682,6 +708,8 @@ and rename_core_type env = function
     S.ArrT (rename_core_type env t0, rename_core_type env t1)
   | S.AppT (t0, t1) ->
     S.AppT (rename_core_type env t0, rename_core_type env t1)
+  | S.PairT (t0, t1) ->
+    S.PairT (rename_core_type env t0, rename_core_type env t1)
   | S.CodT t0 ->
     S.CodT (rename_core_type env t0)
   | S.EscT t0 ->

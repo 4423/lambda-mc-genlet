@@ -55,15 +55,17 @@ type var = string
    | CodE    of core_term
    | EscE    of core_term
    | RunE    of core_term
+   | PairE   of core_term * core_term
 
  and core_type =
-   | VarT of var
-   | AccT of path * var
-   | ArrT of core_type * core_type
-   | AppT of core_type * core_type
-   | CodT of core_type
-   | EscT of core_type
-   | ModT of mod_type
+   | VarT  of var
+   | AccT  of path * var
+   | ArrT  of core_type * core_type
+   | AppT  of core_type * core_type
+   | CodT  of core_type
+   | EscT  of core_type
+   | ModT  of mod_type
+   | PairT of core_type * core_type
 
  and mod_decl =
    | StructureDec of var * mod_term
@@ -94,4 +96,5 @@ type var = string
  and pattern =
    | VarPat  of var
    | ConsPat of pattern * pattern
+   | PairPat of pattern * pattern
    | WildPat

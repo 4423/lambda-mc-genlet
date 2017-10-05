@@ -164,6 +164,10 @@ and pp_core_term: core_term -> string = function
     Printf.sprintf "(%s :: %s)"
       (pp_core_term e0)
       (pp_core_term e1)
+  | PairE (e0, e1) ->
+    Printf.sprintf "(%s, %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
   | NotE e0 ->
     Printf.sprintf "(not %s)"
       (pp_core_term e0)
@@ -201,6 +205,10 @@ and pp_core_type: core_type -> string = function
       (pp_core_type t1)
   | AppT (t0, t1) ->
     Printf.sprintf "(%s %s)"
+      (pp_core_type t0)
+      (pp_core_type t1)
+  | PairT (t0, t1) ->
+    Printf.sprintf "(%s * %s)"
       (pp_core_type t0)
       (pp_core_type t1)
 
@@ -297,7 +305,11 @@ and pp_pattern: pattern -> string = function
   | VarPat x0 -> 
     (pp_var x0)
   | ConsPat (pat0, pat1) ->
-    Printf.sprintf "%s :: %s"
+    Printf.sprintf "(%s :: %s)"
+      (pp_pattern pat0)
+      (pp_pattern pat1)
+  | PairPat (pat0, pat1) ->
+    Printf.sprintf "(%s, %s)"
       (pp_pattern pat0)
       (pp_pattern pat1)
   | WildPat ->

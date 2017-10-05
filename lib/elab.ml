@@ -50,6 +50,8 @@ and small_type0 = function
     S.ArrT (small_type0 t0, small_type0 t1)
   | S.AppT (t0, t1) ->
     S.AppT (small_type0 t0, small_type0 t1)
+  | S.PairT (t0, t1) ->
+    S.PairT (small_type0 t0, small_type0 t1)
   | S.CodT t0 ->
     S.CodT (small_type0 t0)
   | S.EscT _ ->
@@ -65,6 +67,8 @@ and small_type1 = function
     S.ArrT (small_type1 t0, small_type1 t1)
   | S.AppT (t0, t1) ->
     S.AppT (small_type1 t0, small_type1 t1)
+  | S.PairT (t0, t1) ->
+    S.PairT (small_type1 t0, small_type1 t1)
   | S.CodT _ ->
     failwith "[error] ``code`` is not allowed to appear at level-1 type"
   | S.EscT t0 ->
@@ -123,6 +127,8 @@ and small_term0 = function
     S.DisjE (small_term0 e0, small_term0 e1)
   | S.ConsE (e0, e1) ->
     S.ConsE (small_term0 e0, small_term0 e1)
+  | S.PairE (e0, e1) ->
+    S.PairE (small_term0 e0, small_term0 e1)
   | S.NotE e0 ->
     S.NotE (small_term0 e0)
   | S.NegE e0 ->
@@ -184,6 +190,8 @@ and small_term1 = function
     S.DisjE (small_term1 e0, small_term1 e1)
   | S.ConsE (e0, e1) ->
     S.ConsE (small_term1 e0, small_term1 e1)
+  | S.PairE (e0, e1) ->
+    S.PairE (small_term1 e0, small_term1 e1)
   | S.NotE e0 ->
     S.NotE (small_term1 e0)
   | S.NegE e0 ->
@@ -199,6 +207,8 @@ and large_type0 = function
     L.ArrT (large_type0 t0, large_type0 t1)
   | L.AppT (t0, t1) ->
     L.AppT (large_type0 t0, large_type0 t1)
+  | L.PairT (t0, t1) ->
+    L.PairT (large_type0 t0, large_type0 t1)
   | L.ModT s0 ->
     L.ModT (signature0 s0)
   | L.ModCodT s0 ->
@@ -211,6 +221,8 @@ and large_type1 = function
     L.ArrT (large_type1 t0, large_type1 t1)
   | L.AppT (t0, t1) ->
     L.AppT (large_type1 t0, large_type1 t1)
+  | L.PairT (t0, t1) ->
+    L.PairT (large_type1 t0, large_type1 t1)
   | L.ModT s0 ->
     L.ModT (signature1 s0)
   | L.ModCodT _ ->

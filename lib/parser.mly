@@ -87,7 +87,7 @@ open Syntax
 %left DISJ
 %left CONJ
 %left EQ NE GT GT_EQ LE LE_EQ
-%right COL_COL
+%right COL_COL COMMA
 %left ADD SUB
 %left MUL DIV
 %nonassoc UNARY
@@ -127,6 +127,8 @@ core_type
     { AppT ($1, $2) }
   | core_type SINGLE_ARROW core_type
     { ArrT ($1, $3) }
+  | core_type MUL core_type
+    { PairT ($1, $3) }
   ;
 
 simple_type
@@ -185,6 +187,8 @@ core_term
     { Syntax.ConjE ($1, $3) }
   | core_term DISJ core_term
     { Syntax.DisjE ($1, $3) }
+  | core_term COMMA core_term
+    { Syntax.PairE ($1, $3) }
   | core_term COL_COL core_term
     { Syntax.ConsE ($1, $3) }
   | NOT core_term
@@ -232,6 +236,8 @@ match_clause
 pattern
   : pattern COL_COL pattern
     { ConsPat ($1, $3) }
+  | pattern COMMA pattern
+    { PairPat ($1, $3) }
   | simple_pattern
     { $1 }
   ;
