@@ -52,6 +52,8 @@ open Syntax
 %token BAR               // "|"
 %token DOLLAR            // "$"
 %token UNIT              // "()"
+%token CONJ              // "&&"
+%token DISJ              // "||"
 %token TRUE              // "true"
 %token FALSE             // "false"
 %token NOT               // "not"
@@ -78,13 +80,15 @@ open Syntax
 %nonassoc BAR
 %nonassoc IN ELSE
 %left WITH
-%left EQ NE GT GT_EQ LE LE_EQ
 %right SINGLE_ARROW DOUBLE_ARROW
+%left DISJ
+%left CONJ
+%left EQ NE GT GT_EQ LE LE_EQ
 %right COL_COL
 %left ADD SUB
 %left MUL DIV
 %nonassoc UNARY
-%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN ESC RUN LCOD CODE DOLLAR CON
+%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN ESC RUN LCOD CODE DOLLAR CON NOT NEG
 
 %type <Syntax.mod_decl list * Syntax.toplevel list> main
 %type <Syntax.core_term> core_term
@@ -147,6 +151,34 @@ core_term
     { LetModE ($3, $5, $7) }
   | IF core_term THEN core_term ELSE core_term
     { IfE ($2, $4, $6) }
+  | core_term ADD core_term
+    { Syntax.AddE ($1, $3) }
+  | core_term SUB core_term
+    { Syntax.SubE ($1, $3) }
+  | core_term MUL core_term
+    { Syntax.MulE ($1, $3) }
+  | core_term DIV core_term
+    { Syntax.DivE ($1, $3) }
+  | core_term EQ core_term
+    { Syntax.EqE ($1, $3) }
+  | core_term NE core_term
+    { Syntax.NeE ($1, $3) }
+  | core_term GT core_term
+    { Syntax.GtE ($1, $3) }
+  | core_term LE core_term
+    { Syntax.LeE ($1, $3) }
+  | core_term GT_EQ core_term
+    { Syntax.GtEqE ($1, $3) }
+  | core_term LE_EQ core_term
+    { Syntax.LeEqE ($1, $3) }
+  | core_term CONJ core_term
+    { Syntax.ConjE ($1, $3) }
+  | core_term DISJ core_term
+    { Syntax.DisjE ($1, $3) }
+  | NOT core_term
+    { Syntax.NotE ($2) }
+  | SUB core_term %prec UNARY
+    { Syntax.NegE ($2) }
   ;
 
 simple_term
@@ -164,6 +196,12 @@ simple_term
     { AccE ($1, $3) }
   | VAR
     { VarE $1 }
+  | INT
+    { IntE $1 }
+  | TRUE
+    { BoolE true }
+  | FALSE
+    { BoolE false }
   ;
 
 mod_decl_list

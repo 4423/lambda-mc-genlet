@@ -93,6 +93,10 @@ rule token = parse
     { SEM_SEM }
 | "()"
     { UNIT }
+| "&&"
+    { CONJ }
+| "||"
+    { DISJ }
 | "true"
     { TRUE }
 | "false"

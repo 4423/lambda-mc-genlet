@@ -33,6 +33,22 @@ type var = string
    | LetRecE of var * var list * var list * core_term * core_term
    | LetModE of var * mod_term * core_term
    | IfE     of core_term * core_term * core_term
+   | IntE    of int
+   | BoolE   of bool
+   | AddE    of core_term * core_term
+   | SubE    of core_term * core_term
+   | MulE    of core_term * core_term
+   | DivE    of core_term * core_term
+   | EqE     of core_term * core_term
+   | NeE     of core_term * core_term   
+   | GtE     of core_term * core_term
+   | LeE     of core_term * core_term
+   | GtEqE   of core_term * core_term
+   | LeEqE   of core_term * core_term
+   | ConjE   of core_term * core_term
+   | DisjE   of core_term * core_term
+   | NotE    of core_term
+   | NegE    of core_term
    | ModE    of mod_term * mod_type
    | CodE    of core_term
    | EscE    of core_term

@@ -89,6 +89,39 @@ and small_term0 = function
     S.RunE (small_term0 e0)
   | S.EscE _ ->
     failwith "[error] ``<esc>`` is not allowed to appear at level-0 term"
+  | S.BoolE b0 ->
+    S.BoolE b0
+  | S.IntE n0 ->
+    S.IntE n0
+  | S.AddE (e0, e1) ->
+    S.AddE (small_term0 e0, small_term0 e1)
+  | S.SubE (e0, e1) ->
+    S.SubE (small_term0 e0, small_term0 e1)
+  | S.MulE (e0, e1) ->
+    S.MulE (small_term0 e0, small_term0 e1)
+  | S.DivE (e0, e1) ->
+    S.DivE (small_term0 e0, small_term0 e1)
+  | S.EqE (e0, e1) ->
+    S.EqE (small_term0 e0, small_term0 e1)
+  | S.NeE (e0, e1) ->
+    S.NeE (small_term0 e0, small_term0 e1)
+  | S.GtE (e0, e1) ->
+    S.GtE (small_term0 e0, small_term0 e1)
+  | S.GtEqE (e0, e1) ->
+    S.GtEqE (small_term0 e0, small_term0 e1)
+  | S.LeE (e0, e1) ->
+    S.LeE (small_term0 e0, small_term0 e1)
+  | S.LeEqE (e0, e1) ->
+    S.LeEqE (small_term0 e0, small_term0 e1)
+  | S.ConjE (e0, e1) ->
+    S.ConjE (small_term0 e0, small_term0 e1)
+  | S.DisjE (e0, e1) ->
+    S.DisjE (small_term0 e0, small_term0 e1)
+  | S.NotE e0 ->
+    S.NotE (small_term0 e0)
+  | S.NegE e0 ->
+    S.NegE (small_term0 e0)
+
 
 and small_term1 = function
   | S.VarE x0 ->
@@ -113,6 +146,39 @@ and small_term1 = function
     failwith "[error] ``run`` is not allowed to appear at level-1 term"
   | S.EscE e0 ->
     S.EscE (small_term0 e0)
+  | S.BoolE b0 ->
+    S.BoolE b0
+  | S.IntE n0 ->
+    S.IntE n0
+  | S.AddE (e0, e1) ->
+    S.AddE (small_term1 e0, small_term1 e1)
+  | S.SubE (e0, e1) ->
+    S.SubE (small_term1 e0, small_term1 e1)
+  | S.MulE (e0, e1) ->
+    S.MulE (small_term1 e0, small_term1 e1)
+  | S.DivE (e0, e1) ->
+    S.DivE (small_term1 e0, small_term1 e1)
+  | S.EqE (e0, e1) ->
+    S.EqE (small_term1 e0, small_term1 e1)
+  | S.NeE (e0, e1) ->
+    S.NeE (small_term1 e0, small_term1 e1)
+  | S.GtE (e0, e1) ->
+    S.GtE (small_term1 e0, small_term1 e1)
+  | S.GtEqE (e0, e1) ->
+    S.GtEqE (small_term1 e0, small_term1 e1)
+  | S.LeE (e0, e1) ->
+    S.LeE (small_term1 e0, small_term1 e1)
+  | S.LeEqE (e0, e1) ->
+    S.LeEqE (small_term1 e0, small_term1 e1)
+  | S.ConjE (e0, e1) ->
+    S.ConjE (small_term1 e0, small_term1 e1)
+  | S.DisjE (e0, e1) ->
+    S.DisjE (small_term1 e0, small_term1 e1)
+  | S.NotE e0 ->
+    S.NotE (small_term1 e0)
+  | S.NegE e0 ->
+    S.NegE (small_term1 e0)
+
 
 and large_type0 = function
   | L.SmallT t0 ->

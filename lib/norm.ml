@@ -32,6 +32,23 @@ module Small = struct
     | CodE    of core_term
     | EscE    of core_term
     | RunE    of core_term
+    | BoolE   of bool
+    | IntE    of int
+    | AddE    of core_term * core_term
+    | SubE    of core_term * core_term
+    | MulE    of core_term * core_term
+    | DivE    of core_term * core_term
+    | EqE     of core_term * core_term
+    | NeE     of core_term * core_term
+    | GtE     of core_term * core_term
+    | GtEqE   of core_term * core_term
+    | LeE     of core_term * core_term
+    | LeEqE   of core_term * core_term
+    | ConjE   of core_term * core_term
+    | DisjE   of core_term * core_term
+    | NotE    of core_term
+    | NegE    of core_term
+
   and core_type =
     | VarT    of var
     | AccT    of path * var
@@ -191,6 +208,56 @@ and norm_term env = function
       | _ ->
         failwith "[error] ``<run>`` is not allowed to apply to large term"
     end
+  | Syntax.BoolE b0 ->
+    L.SmallE (S.BoolE b0)
+  | Syntax.IntE n0 ->
+    L.SmallE (S.IntE n0)
+  | Syntax.NegE e0 -> begin
+      match norm_term env e0 with
+      | L.SmallE e0' ->
+        L.SmallE (S.NegE e0')
+      | _ ->
+        failwith "[error] ``<neg>`` is not allowed to apply to large term"
+    end
+  | Syntax.NotE e0 -> begin
+      match norm_term env e0 with
+      | L.SmallE e0' ->
+        L.SmallE (S.NotE e0')
+      | _ ->
+        failwith "[error] ``<neg>`` is not allowed to apply to large term"
+    end
+  | Syntax.AddE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.AddE (e0, e1))
+  | Syntax.SubE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.SubE (e0, e1))
+  | Syntax.MulE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.MulE (e0, e1))
+  | Syntax.DivE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.DivE (e0, e1))
+  | Syntax.EqE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.EqE (e0, e1))
+  | Syntax.NeE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.NeE (e0, e1))
+  | Syntax.GtE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.GtE (e0, e1))
+  | Syntax.LeE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.LeE (e0, e1))
+  | Syntax.GtEqE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.GtEqE (e0, e1))
+  | Syntax.LeEqE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.LeEqE (e0, e1))
+  | Syntax.DisjE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.DisjE (e0, e1))
+  | Syntax.ConjE (e0, e1) ->
+    norm_binop env ~lhs:e0 ~rhs:e1 ~f:(fun e0 e1 -> S.ConjE (e0, e1))
+
+and norm_binop env ~f ~lhs ~rhs =
+  match norm_term env lhs, norm_term env rhs with
+  | L.SmallE e0', L.SmallE e1' ->
+    L.SmallE (f e0' e1')
+  | _ ->
+    failwith "[error] large term is not allowed to appear within small term"
+
 and norm_type env = function
   | Syntax.VarT x0 ->
     L.SmallT (S.VarT x0)
@@ -332,6 +399,38 @@ and denorm_term = function
     Syntax.EscE (denorm_term (L.SmallE e0))
   | L.SmallE (S.RunE e0) ->
     Syntax.RunE (denorm_term (L.SmallE e0))
+  | L.SmallE (S.BoolE b0) ->
+    Syntax.BoolE b0
+  | L.SmallE (S.IntE n0) ->
+    Syntax.IntE n0
+  | L.SmallE (S.AddE (e0, e1)) ->
+    Syntax.AddE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.SubE (e0, e1)) ->
+    Syntax.SubE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.MulE (e0, e1)) ->
+    Syntax.MulE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.DivE (e0, e1)) ->
+    Syntax.DivE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.EqE (e0, e1)) ->
+    Syntax.EqE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.NeE (e0, e1)) ->
+    Syntax.NeE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.GtE (e0, e1)) ->
+    Syntax.GtE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.LeE (e0, e1)) ->
+    Syntax.LeE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.GtEqE (e0, e1)) ->
+    Syntax.GtEqE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.LeEqE (e0, e1)) ->
+    Syntax.LeEqE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.ConjE (e0, e1)) ->
+    Syntax.ConjE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.DisjE (e0, e1)) ->
+    Syntax.DisjE (denorm_term (L.SmallE e0), denorm_term (L.SmallE e1))
+  | L.SmallE (S.NotE e0) ->
+    Syntax.NotE (denorm_term (L.SmallE e0))
+  | L.SmallE (S.NegE e0) ->
+    Syntax.NegE (denorm_term (L.SmallE e0))
   | L.LetE (x0, xs0, ys0, e0, e1) ->
     Syntax.LetE (x0, xs0, ys0, denorm_term e0, denorm_term e1)
   | L.LetRecE (x0, xs0, ys0, e0, e1) ->
@@ -420,9 +519,12 @@ and dollar_core_term = function
     Set.singleton x0
   | S.IfE (e0, e1, e2) ->
     Set.union (dollar_core_term e0) (Set.union (dollar_core_term e1) (dollar_core_term e2))
-  | S.LetE (_, _, _, e0, e1) | S.LetRecE (_, _, _, e0, e1) | S.AppE (e0, e1) ->
+  | S.LetE (_, _, _, e0, e1) | S.LetRecE (_, _, _, e0, e1) | S.AppE (e0, e1)
+  | S.AddE (e0, e1) | S.SubE (e0, e1) | S.MulE (e0, e1) | S.DivE (e0, e1)
+  | S.EqE (e0, e1)  | S.NeE (e0, e1)  | S.GtE (e0, e1)  | S.LeE (e0, e1) | S.GtEqE (e0, e1) | S.LeEqE (e0, e1)
+  | S.ConjE (e0, e1) | S.DisjE (e0, e1) ->
     Set.union (dollar_core_term e0) (dollar_core_term e1)
-  | S.FunE (_, e0) | S.CodE e0 | S.EscE e0 | S.RunE e0 ->
+  | S.FunE (_, e0) | S.CodE e0 | S.EscE e0 | S.RunE e0 | S.NotE e0 | S.NegE e0 ->
     dollar_core_term e0
   | _ ->
     Set.empty
@@ -468,6 +570,38 @@ and rename_core_term env = function
     S.EscE (rename_core_term env e0)
   | S.RunE e0 ->
     S.RunE (rename_core_term env e0)
+  | S.BoolE b0 ->
+    S.BoolE b0
+  | S.IntE n0 ->
+    S.IntE n0
+  | S.AddE (e0, e1) ->
+    S.AddE (rename_core_term env e0, rename_core_term env e1)
+  | S.SubE (e0, e1) ->
+    S.SubE (rename_core_term env e0, rename_core_term env e1)
+  | S.MulE (e0, e1) ->
+    S.MulE (rename_core_term env e0, rename_core_term env e1)
+  | S.DivE (e0, e1) ->
+    S.DivE (rename_core_term env e0, rename_core_term env e1)
+  | S.EqE (e0, e1) ->
+    S.EqE (rename_core_term env e0, rename_core_term env e1)
+  | S.NeE (e0, e1) ->
+    S.NeE (rename_core_term env e0, rename_core_term env e1)
+  | S.GtE (e0, e1) ->
+    S.GtE (rename_core_term env e0, rename_core_term env e1)
+  | S.LeE (e0, e1) ->
+    S.LeE (rename_core_term env e0, rename_core_term env e1)
+  | S.GtEqE (e0, e1) ->
+    S.GtEqE (rename_core_term env e0, rename_core_term env e1)
+  | S.LeEqE (e0, e1) ->
+    S.LeEqE (rename_core_term env e0, rename_core_term env e1)
+  | S.ConjE (e0, e1) ->
+    S.ConjE (rename_core_term env e0, rename_core_term env e1)
+  | S.DisjE (e0, e1) ->
+    S.DisjE (rename_core_term env e0, rename_core_term env e1)
+  | S.NotE e0 ->
+    S.NotE (rename_core_term env e0)
+  | S.NegE e0 ->
+    S.NegE (rename_core_term env e0)
 
 and rename_core_type env = function
   | S.VarT x0 ->

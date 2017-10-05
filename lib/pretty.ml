@@ -108,6 +108,56 @@ and pp_core_term: core_term -> string = function
   | RunE e0 ->
     Printf.sprintf "Runcode.run (%s)"
       (pp_core_term e0)
+  | IntE n0 ->
+    string_of_int n0
+  | BoolE b0 ->
+    string_of_bool b0
+  | AddE (e0, e1) ->
+    Printf.sprintf "(%s + %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | SubE (e0, e1) ->
+    Printf.sprintf "(%s - %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | MulE (e0, e1) ->
+    Printf.sprintf "(%s * %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | DivE (e0, e1) ->
+    Printf.sprintf "(%s / %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | EqE (e0, e1) ->
+    Printf.sprintf "(%s = %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | NeE (e0, e1) ->
+    Printf.sprintf "(%s <> %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | GtE (e0, e1) ->
+    Printf.sprintf "(%s > %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | GtEqE (e0, e1) ->
+    Printf.sprintf "(%s >= %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | LeE (e0, e1) ->
+    Printf.sprintf "(%s < %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | LeEqE (e0, e1) ->
+    Printf.sprintf "(%s <= %s)"
+      (pp_core_term e0)
+      (pp_core_term e1)
+  | NotE e0 ->
+    Printf.sprintf "(not %s)"
+      (pp_core_term e0)
+  | NegE e0 ->
+    Printf.sprintf "(-%s)"
+      (pp_core_term e0)
 
 and pp_core_type: core_type -> string = function
   | VarT (x0) ->
