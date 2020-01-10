@@ -78,6 +78,7 @@ open Syntax
 %token RCOD              // ">."
 %token ESC               // ".~"
 %token RUN               // "Runcode.run"
+%token RUNMOD            // "run_module"
 %token EOF
 %nonassoc IN ELSE
 %nonassoc WITH
@@ -91,7 +92,7 @@ open Syntax
 %left ADD SUB
 %left MUL DIV
 %nonassoc UNARY
-%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN ESC RUN LCOD CODE DOLLAR CON NOT NEG
+%left VAR INT TRUE FALSE UNIT LBRACE LBRACKET LPAREN ESC RUN RUNMOD LCOD CODE DOLLAR CON NOT NEG
 
 %type <Syntax.mod_decl list * Syntax.toplevel list> main
 %type <Syntax.core_term> core_term
@@ -210,6 +211,8 @@ simple_term
     { EscE $2 }
   | RUN simple_term
     { RunE $2 }
+  | LPAREN RUNMOD simple_term COL mod_type RPAREN
+    { RunModE ($3, $5) }
   | path DOT VAR
     { AccE ($1, $3) }
   | VAR
@@ -281,7 +284,9 @@ structure
 
 structure_component
   : TYPE VAR EQ core_type
-    { TypeM ($2, $4) }
+    { TypeM ($2, Some $4) }
+  | TYPE VAR
+    { TypeM ($2, None) }
   | LET REC VAR type_parameter_list parameter_list EQ core_term
     { LetRecM ($3, List.rev $4, List.rev $5, $7) }
   | LET VAR type_parameter_list parameter_list EQ core_term

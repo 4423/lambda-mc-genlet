@@ -55,6 +55,7 @@ type var = string
    | CodE    of core_term
    | EscE    of core_term
    | RunE    of core_term
+   | RunModE of core_term * mod_type
    | PairE   of core_term * core_term
 
  and core_type =
@@ -77,7 +78,7 @@ type var = string
    | UnpackM      of core_term
  and structure = structure_component list
  and structure_component =
-   | TypeM        of var * core_type
+   | TypeM        of var * core_type option
    | LetRecM      of var * var list * var list * core_term
    | LetM         of var * var list * var list * core_term
    | ModM         of var * mod_term

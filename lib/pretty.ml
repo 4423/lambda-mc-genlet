@@ -108,6 +108,8 @@ and pp_core_term: core_term -> string = function
   | RunE e0 ->
     Printf.sprintf "Runcode.run (%s)"
       (pp_core_term e0)
+  | RunModE _ ->
+    failwith "[error] ``run_module`` should not appear in pp_core_term"
   | IntE n0 ->
     string_of_int n0
   | BoolE b0 ->
@@ -238,10 +240,13 @@ and pp_mod_term: mod_term -> string = function
 and pp_structure: structure -> string =
   fun cs0 -> String.concat " " @@ List.map pp_structure_component cs0
 and pp_structure_component: structure_component -> string = function
-  | TypeM (x0, t0) ->
+  | TypeM (x0, Some t0) ->
     Printf.sprintf "type %s = %s"
       (pp_var x0)
       (pp_core_type t0)
+  | TypeM (x0, None) ->
+    Printf.sprintf "type %s"
+      (pp_var x0)
   | LetRecM (x0, xs0, ys0, e0) ->
     Printf.sprintf "let rec %s %s %s = %s"
       (pp_var x0)

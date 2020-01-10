@@ -73,6 +73,8 @@ rule token = parse
     { ESC }
 | "Runcode.run"
     { RUN }
+| "run_module"
+    { RUNMOD }
 | "->"
     { SINGLE_ARROW }
 | "=>"
