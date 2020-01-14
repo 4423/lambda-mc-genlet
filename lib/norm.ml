@@ -642,7 +642,7 @@ and rename_core_term env = function
   | S.AccE (S.DollarP x0, x1) ->
     S.AccE (S.VarP (List.assoc x0 env), x1)
   | S.IfE (e0, e1, e2) ->
-    S.IfE (rename_core_term env e0, rename_core_term env e1, rename_core_term env e1)
+    S.IfE (rename_core_term env e0, rename_core_term env e1, rename_core_term env e2)
   | S.LetRecE (x0, xs0, ys0, e0, e1) ->
     S.LetRecE (x0, xs0, ys0, rename_core_term env e0, rename_core_term env e1)
   | S.LetE (x0, xs0, ys0, e0, e1) ->

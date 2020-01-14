@@ -23,15 +23,16 @@ let suppressAddZeroOrMulZeroPE = fun (m: (module S) code) ->
       let int = fun n1 -> if n1 = 0 then (.~($m.int) 0, true) else (.~($m.int) n1, false)
       let add = fun n1 -> fun n2 -> 
         match (n1, n2) with
-          (n1, b1), (n2, b2) -> if (b1 && b2) then (.~($m.int) 0, true) else .~($m.add) n1 n2
+          (n1, b1), (n2, b2) -> if (b1 && b2) then (.~($m.int) 0, true) else (.~($m.add) n1 n2, false)
       let sub = fun n1 -> fun n2 ->
-        if n1 = n2 then (.~($m.int) 0, true) else .~($m.sub) n1 n2
+        match (n1, n2) with
+          (n1, _), (n2, _) -> if n1 = n2 then (.~($m.int) 0, true) else (.~($m.sub) n1 n2, false)
       let mul = fun n1 -> fun n2 ->
         match (n1, n2) with
-          (n1, b1), (n2, b2) -> if (b1 || b2) then (.~($m.int) 0, true) else .~($m.mul) n1 n2
+          (n1, b1), (n2, b2) -> if (b1 || b2) then (.~($m.int) 0, true) else (.~($m.mul) n1 n2, false)
       let div = fun n1 -> fun n2 ->
         match (n1, n2) with
-          (n1, _), (n2, _) -> .~($m.div) n1 n2, false
+          (n1, _), (n2, _) -> (.~($m.div) n1 n2, false)
     end: S)>.
 ;;
 let rec fix depth m =
